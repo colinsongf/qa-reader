@@ -1,0 +1,27 @@
+##############################################
+#	* @author [cb]                           #
+#	* @email [cbqin0323@gmail.com]           #
+#	* @create date 2018-05-07 02:06:17       #
+#	* @modify date 2018-05-07 02:06:17       #
+#	* @desc [YAML setting for model params]  #
+##############################################
+
+default: &DEFAULT
+    cell: lstm
+    optim: adam
+    learning_rate: 0.001
+    weight_decay: 0
+    dropout_keep_prob: 1
+    batch_size: 32
+    epochs: 20
+    embed_size: 300
+    hidden_size: 150
+    max_p_num: 5
+    max_p_len: 500
+    max_q_len: 60
+    max_a_len: 200
+gru: &GRU
+    <<: *DEFAULT
+    cell: gru
+lstm: &LSTM
+    <<: *DEFAULT
