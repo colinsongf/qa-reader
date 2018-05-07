@@ -1,2 +1,2 @@
-# qa_reader
-a qa system based on machine reading comprehension.
+# QA_Reader
+This is a qa system based on **Machine Reading Comprehension**.
