@@ -1,9 +1,9 @@
 """
 	* @author [cb]
 	* @email [cbqin0323@gmail.com]
-	* @create date 2018-05-07 01:36:38
-	* @modify date 2018-05-07 01:36:38
-	* @desc [implement the BiDAF algorithm described in https://arxiv.org/abs/1611.01603]
+	* @create date 2018-05-08 10:07:18
+	* @modify date 2018-05-08 10:07:18
+	* @desc [implement the mlstm algorithm described in https://arxiv.org/abs/1608.07905]
 """
 
 import os
@@ -16,5 +16,5 @@ from utils import compute_bleu_rouge
 from utils import normalize
 
 
-class Bidaf(object):
+class Mlstm(object):
     pass

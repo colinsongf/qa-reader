@@ -1,10 +1,10 @@
-##############################################
+################################################
 #	  * @author [cb]                           #
 #	  * @email [cbqin0323@gmail.com]           #
 #	  * @create date 2018-05-07 02:06:17       #
 #	  * @modify date 2018-05-07 02:06:17       #
 #	  * @desc [YAML setting for app config]    #
-##############################################
+################################################
 
 default: &DEFAULT
     word2vec: /opt/word2vec/benebot_vector/word2vec.bin
@@ -13,6 +13,7 @@ default: &DEFAULT
     result_dir: ../data/results/
     summary_dir: ../data/summary/
     log_path: ~
+    dataset_name: ~
 dureader_debug: &DUREADER_DEBUG
     <<: *DEFAULT
     train_files: 
@@ -21,6 +22,7 @@ dureader_debug: &DUREADER_DEBUG
         - ../data/demo/dureader/devset/search.dev.json
     test_files:
         - ../data/demo/dureader/testset/search.test.json
+    dataset_name: dureader_debug
 cmrc2018_debug: &CMRC2018_DEBUG
     <<: *DEFAULT
     train_files:
@@ -29,6 +31,7 @@ cmrc2018_debug: &CMRC2018_DEBUG
         - ../data/demo/cmrc2018/devset/dev.json
     test_files:
         - ../data/demo/cmrc2018/testset/test.json
+    dataset_name: cmrc2018_debug
 dureader: &DUREADER
     <<: *DUREADER_DEBUG
     train_files:
@@ -40,6 +43,7 @@ dureader: &DUREADER
     test_files:
         - ../data/preprocessed/dureader/testset/search.test.json
         - ../data/preprocessed/dureader/testset/zhidao.test.json
+    dataset_name: dureader
 cmrc2018: &CMRC2018
     <<: *CMRC2018_DEBUG
     train_files:
@@ -48,3 +52,4 @@ cmrc2018: &CMRC2018
         - ../data/preprocessed/cmrc2018/devset/dev.json
     test_files:
         - ../data/preprocessed/cmrc2018/testset/test.json
+    dataset_name: cmrc2018

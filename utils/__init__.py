@@ -28,11 +28,13 @@ from .dureader_eval import normalize
 from .preprocess import find_fake_answer
 from .preprocess import find_best_question_match
 from .vec_helper import BenebotVector
+from .parameter import Config
 
 __all__ = [
     'compute_bleu_rouge',
     'normalize',
     'find_fake_answer',
     'find_best_question_match',
-    'BenebotVector'
+    'BenebotVector',
+    'Config'
 ]

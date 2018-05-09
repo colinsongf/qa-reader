@@ -20,6 +20,7 @@ default: &DEFAULT
     max_p_len: 500
     max_q_len: 60
     max_a_len: 200
+    gpu: 1
 gru: &GRU
     <<: *DEFAULT
     cell: gru
