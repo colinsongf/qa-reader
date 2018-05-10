@@ -1,66 +1,23 @@
-"""
-	* @author [cb]
-	* @email [cbqin0323@gmail.com]
-	* @create date 2018-05-08 01:59:28
-	* @modify date 2018-05-08 01:59:28
-	* @desc [This module implements data process strategies.]
-"""
+# -*- coding:utf8 -*-
+# ==============================================================================
+# Copyright 2017 Baidu.com, Inc. All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 
 """
-This module implements data process strategies.
-Include DuReader and cmrc2018 dataset.
-The part of DuReader is borrowed from DuReader data process strategies.
+This module implements DuReader data process strategies.
 """
-
-import os
-import json
-import logging
-import numpy as np
-from collections import Counter
-from tqdm import tqdm
-
-
-class CMRCDataset(object):
-    """
-    This module implements the APIs for loading and using
-    cmrc2018 reading comprehension dataset
-    """
-
-    def __init__(self, max_p_num, max_p_len, max_q_len,
-                 train_files=[], dev_files=[], test_files=[])
-        self.logger = logging.getLogger("qarc")
-        self.max_p_num = max_p_num
-        self.max_p_len = max_p_len
-        self.max_q_len = max_q_len
-
-        self.train_set, self.dev_set, self.test_set = [], [], []
-        if train_files:
-            self.logger.info('Load train dataset...')
-            for train_file in train_files:
-                self.train_set += self._load_dataset(train_file, train=True)
-            self.logger.info(
-                'Train set size: {} questions.'.format(len(self.train_set)))
-
-        if dev_files:
-            self.logger.info('Load dev dataset...')
-            for dev_file in dev_files:
-                self.dev_set += self._load_dataset(dev_file)
-            self.logger.info(
-                'Dev set size: {} questions.'.format(len(self.dev_set)))
-
-        if test_files:
-            self.logger.info('Load test dataset...')
-            for test_file in test_files:
-                self.test_set += self._load_dataset(test_file)
-            self.logger.info(
-                'Test set size: {} questions.'.format(len(self.test_set)))
-
-    def _load_dataset(self, data_path, train=False):
-        """
-        Loads the dataset
-        Args:
-            data_path: the data file to load
-        """
 
 
 class BRCDataset(object):
@@ -70,7 +27,7 @@ class BRCDataset(object):
 
     def __init__(self, max_p_num, max_p_len, max_q_len,
                  train_files=[], dev_files=[], test_files=[]):
-        self.logger = logging.getLogger("brc")
+        self.logger = logging.getLogger("qarc")
         self.max_p_num = max_p_num
         self.max_p_len = max_p_len
         self.max_q_len = max_q_len
@@ -147,6 +104,7 @@ class BRCDataset(object):
                             fake_passage_tokens += para_info[0]
                         sample['passages'].append(
                             {'passage_tokens': fake_passage_tokens})
+                del sample['documents']
                 data_set.append(sample)
         return data_set
 

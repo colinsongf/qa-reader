@@ -200,7 +200,7 @@ def find_answer_span(sample):
             end = start + len(segmented_answer)
             answer_span.append(start)
             answer_span.append(end)
-        sample['answer_span'] = answer_span
+        qa['answer_span'] = answer_span
     return sample
 
 

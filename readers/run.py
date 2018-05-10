@@ -2,7 +2,7 @@
 	* @author [cb]
 	* @email [cbqin0323@gmail.com]
 	* @create date 2018-05-07 04:17:16
-	* @modify date 2018-05-07 04:17:16
+	* @modify date 2018-05-10 01:26:40
 	* @desc [run the model system]
 """
 
@@ -16,7 +16,8 @@ import pickle
 import json
 import argparse
 import logging
-from dataset import Dataset
+from brc_dataset import BRCDataset
+from cmrc_dataset import CMRCDataset
 from vocab import Vocab
 from rc_model.bidaf import Bidaf
 from rc_model.mlstm import Mlstm
