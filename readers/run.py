@@ -85,8 +85,12 @@ def prepare(config):
             os.makedirs(dir_path)
 
     logger.info('Load dataset...')
-    qarc_data = Dataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                        config.train_files, config.dev_files, config.test_files)
+    if config.dataset_name.startswith('cmrc2018'):
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
+    else:
+        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
 
     logger.info('Building vocabulary...')
     vocab = Vocab(lower=True)
@@ -118,8 +122,12 @@ def train(args, config):
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'rb') as fin:
         vocab = pickle.load(fin)
 
-    qarc_data = Dataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                        config.train_files, config.dev_files)
+    if config.dataset_name.startswith('cmrc2018'):
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
+    else:
+        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
 
@@ -150,8 +158,12 @@ def evaluate(args, config):
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'rb') as fin:
         vocab = pickle.load(fin)
     assert len(config.dev_files) > 0, 'No dev files are provided.'
-    qarc_data = Dataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                        config.train_files, config.dev_files)
+    if config.dataset_name.startswith('cmrc2018'):
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
+    else:
+        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
     logger.info('Restoring the model...')
@@ -181,8 +193,12 @@ def predict(args, config):
         vocab = pickle.load(fin)
     assert len(config.test_files) > 0, 'No test files are provided.'
 
-    qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                           test_files=config.test_files)
+    if config.dataset_name.startswith('cmrc2018'):
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
+    else:
+        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                                config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
     logger.info('Restoring the model...')

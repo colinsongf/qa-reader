@@ -52,4 +52,4 @@ cmrc2018: &CMRC2018
         - ../data/preprocessed/cmrc2018/devset/dev.json
     test_files:
         - ../data/preprocessed/cmrc2018/testset/test.json
-    dataset_name: cmrc2018
+    dataset_name: cmrc2018 
