@@ -43,17 +43,17 @@ class DuBidaf(object):
         self.vocab = vocab
 
         # session info
-        sess_config = tf.ConfigProto()
-        sess_config.gpu_options.allow_growth = True
-        self.sess = tf.Session(config=sess_config)
+        # sess_config = tf.ConfigProto()
+        # sess_config.gpu_options.allow_growth = True
+        # self.sess = tf.Session(config=sess_config)
 
         self._build_graph()
 
         # save info
-        self.saver = tf.train.Saver()
+        # self.saver = tf.train.Saver()
 
         # initialize the model
-        self.sess.run(tf.global_variables_initializer())
+        # self.sess.run(tf.global_variables_initializer())
 
         # tf.linalg.set_diag()
 
@@ -191,99 +191,99 @@ class DuBidaf(object):
                 l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in self.all_params])
             self.loss += self.weight_decay * l2_loss
 
-    def _create_train_op(self):
-        """
-        Selects the training algorithm and creates a train operation with it
-        """
-        if self.optim_type == 'adagrad':
-            self.optimizer = tf.train.AdagradOptimizer(self.learning_rate)
-        elif self.optim_type == 'adam':
-            self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
-        elif self.optim_type == 'rprop':
-            self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
-        elif self.optim_type == 'sgd':
-            self.optimizer = tf.train.GradientDescentOptimizer(
-                self.learning_rate)
-        else:
-            raise NotImplementedError(
-                'Unsupported optimizer: {}'.format(self.optim_type))
-        self.train_op = self.optimizer.minimize(self.loss)
+    # def _create_train_op(self):
+    #     """
+    #     Selects the training algorithm and creates a train operation with it
+    #     """
+    #     if self.optim_type == 'adagrad':
+    #         self.optimizer = tf.train.AdagradOptimizer(self.learning_rate)
+    #     elif self.optim_type == 'adam':
+    #         self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
+    #     elif self.optim_type == 'rprop':
+    #         self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
+    #     elif self.optim_type == 'sgd':
+    #         self.optimizer = tf.train.GradientDescentOptimizer(
+    #             self.learning_rate)
+    #     else:
+    #         raise NotImplementedError(
+    #             'Unsupported optimizer: {}'.format(self.optim_type))
+    #     self.train_op = self.optimizer.minimize(self.loss)
 
-    def _train_epoch(self, train_batches, dropout_keep_prob):
-        """
-        Trains the model for a single epoch.
-        Args:
-            train_batches: iterable batch data for training
-            dropout_keep_prob: float value indicating dropout keep probability
-        """
-        total_num, total_loss = 0, 0
-        log_every_n_batch, n_batch_loss = 50, 0
-        for bitx, batch in enumerate(train_batches, 1):
-            feed_dict = {self.p: batch['passage_token_ids'],
-                         self.q: batch['question_token_ids'],
-                         self.p_length: batch['passage_length'],
-                         self.q_length: batch['question_length'],
-                         self.start_label: batch['start_id'],
-                         self.end_label: batch['end_id'],
-                         self.dropout_keep_prob: dropout_keep_prob}
-            _, loss, p_emb, sep_p_encodes, match_p_encodes, fuse_p_encodes, concat_passage_encodes, no_dup_question_encodes = \
-                self.sess.run(
-                    [self.train_op, self.loss, self.p_emb, self.sep_p_encodes, self.match_p_encodes, self.fuse_p_encodes,
-                     self.concat_passage_encodes, self.no_dup_question_encodes], feed_dict)
-            print('p_emb:{},sep_p_encodes:{},match_p_encodes:{},fuse_p_encodes:{},concat_passage_encodes:{},no_dup_question_encodes:{}'.
-                  format(
-                      p_emb.shape, sep_p_encodes.shape, match_p_encodes.shape, fuse_p_encodes.shape,
-                      concat_passage_encodes.shape, no_dup_question_encodes.shape))
-            total_loss += loss * len(batch['raw_data'])
-            total_num += len(batch['raw_data'])
-            n_batch_loss += loss
-            if log_every_n_batch > 0 and bitx % log_every_n_batch == 0:
-                self.logger.info('Average loss from batch {} to {} is {}'.format(
-                    bitx - log_every_n_batch + 1, bitx, n_batch_loss / log_every_n_batch))
-                n_batch_loss = 0
-        return 1.0 * total_loss / total_num
+    # def _train_epoch(self, train_batches, dropout_keep_prob):
+    #     """
+    #     Trains the model for a single epoch.
+    #     Args:
+    #         train_batches: iterable batch data for training
+    #         dropout_keep_prob: float value indicating dropout keep probability
+    #     """
+    #     total_num, total_loss = 0, 0
+    #     log_every_n_batch, n_batch_loss = 50, 0
+    #     for bitx, batch in enumerate(train_batches, 1):
+    #         feed_dict = {self.p: batch['passage_token_ids'],
+    #                      self.q: batch['question_token_ids'],
+    #                      self.p_length: batch['passage_length'],
+    #                      self.q_length: batch['question_length'],
+    #                      self.start_label: batch['start_id'],
+    #                      self.end_label: batch['end_id'],
+    #                      self.dropout_keep_prob: dropout_keep_prob}
+    #         _, loss, p_emb, sep_p_encodes, match_p_encodes, fuse_p_encodes, concat_passage_encodes, no_dup_question_encodes = \
+    #             self.sess.run(
+    #                 [self.train_op, self.loss, self.p_emb, self.sep_p_encodes, self.match_p_encodes, self.fuse_p_encodes,
+    #                  self.concat_passage_encodes, self.no_dup_question_encodes], feed_dict)
+    #         print('p_emb:{},sep_p_encodes:{},match_p_encodes:{},fuse_p_encodes:{},concat_passage_encodes:{},no_dup_question_encodes:{}'.
+    #               format(
+    #                   p_emb.shape, sep_p_encodes.shape, match_p_encodes.shape, fuse_p_encodes.shape,
+    #                   concat_passage_encodes.shape, no_dup_question_encodes.shape))
+    #         total_loss += loss * len(batch['raw_data'])
+    #         total_num += len(batch['raw_data'])
+    #         n_batch_loss += loss
+    #         if log_every_n_batch > 0 and bitx % log_every_n_batch == 0:
+    #             self.logger.info('Average loss from batch {} to {} is {}'.format(
+    #                 bitx - log_every_n_batch + 1, bitx, n_batch_loss / log_every_n_batch))
+    #             n_batch_loss = 0
+    #     return 1.0 * total_loss / total_num
 
-    def train(self, data, epochs, batch_size, save_dir, save_prefix,
-              dropout_keep_prob=1.0, evaluate=True):
-        """
-        Train the model with data
-        Args:
-            data: the BRCDataset class implemented in dataset.py
-            epochs: number of training epochs
-            batch_size:
-            save_dir: the directory to save the model
-            save_prefix: the prefix indicating the model type
-            dropout_keep_prob: float value indicating dropout keep probability
-            evaluate: whether to evaluate the model on test set after each epoch
-        """
-        pad_id = self.vocab.get_id(self.vocab.pad_token)
-        max_bleu_4 = 0
-        for epoch in range(1, epochs + 1):
-            self.logger.info('Training the model for epoch {}'.format(epoch))
-            train_batches = data.gen_mini_batches(
-                'train', batch_size, pad_id, shuffle=True)
-            train_loss = self._train_epoch(train_batches, dropout_keep_prob)
-            self.logger.info(
-                'Average train loss for epoch {} is {}'.format(epoch, train_loss))
+    # def train(self, data, epochs, batch_size, save_dir, save_prefix,
+    #           dropout_keep_prob=1.0, evaluate=True):
+    #     """
+    #     Train the model with data
+    #     Args:
+    #         data: the BRCDataset class implemented in dataset.py
+    #         epochs: number of training epochs
+    #         batch_size:
+    #         save_dir: the directory to save the model
+    #         save_prefix: the prefix indicating the model type
+    #         dropout_keep_prob: float value indicating dropout keep probability
+    #         evaluate: whether to evaluate the model on test set after each epoch
+    #     """
+    #     pad_id = self.vocab.get_id(self.vocab.pad_token)
+    #     max_bleu_4 = 0
+    #     for epoch in range(1, epochs + 1):
+    #         self.logger.info('Training the model for epoch {}'.format(epoch))
+    #         train_batches = data.gen_mini_batches(
+    #             'train', batch_size, pad_id, shuffle=True)
+    #         train_loss = self._train_epoch(train_batches, dropout_keep_prob)
+    #         self.logger.info(
+    #             'Average train loss for epoch {} is {}'.format(epoch, train_loss))
 
-            if evaluate:
-                self.logger.info(
-                    'Evaluating the model after epoch {}'.format(epoch))
-                if data.dev_set is not None:
-                    eval_batches = data.gen_mini_batches(
-                        'dev', batch_size, pad_id, shuffle=False)
-                    eval_loss, bleu_rouge = self.evaluate(eval_batches)
-                    self.logger.info('Dev eval loss {}'.format(eval_loss))
-                    self.logger.info('Dev eval result: {}'.format(bleu_rouge))
+    #         if evaluate:
+    #             self.logger.info(
+    #                 'Evaluating the model after epoch {}'.format(epoch))
+    #             if data.dev_set is not None:
+    #                 eval_batches = data.gen_mini_batches(
+    #                     'dev', batch_size, pad_id, shuffle=False)
+    #                 eval_loss, bleu_rouge = self.evaluate(eval_batches)
+    #                 self.logger.info('Dev eval loss {}'.format(eval_loss))
+    #                 self.logger.info('Dev eval result: {}'.format(bleu_rouge))
 
-                    if bleu_rouge['Bleu-4'] > max_bleu_4:
-                        self.save(save_dir, save_prefix)
-                        max_bleu_4 = bleu_rouge['Bleu-4']
-                else:
-                    self.logger.warning(
-                        'No dev set is loaded for evaluation in the dataset!')
-            else:
-                self.save(save_dir, save_prefix + '_' + str(epoch))
+    #                 if bleu_rouge['Bleu-4'] > max_bleu_4:
+    #                     self.save(save_dir, save_prefix)
+    #                     max_bleu_4 = bleu_rouge['Bleu-4']
+    #             else:
+    #                 self.logger.warning(
+    #                     'No dev set is loaded for evaluation in the dataset!')
+    #         else:
+    #             self.save(save_dir, save_prefix + '_' + str(epoch))
 
     def evaluate(self, eval_batches, result_dir=None, result_prefix=None, save_full_info=False):
         """
@@ -399,19 +399,3 @@ class DuBidaf(object):
                     best_end = end_idx
                     max_prob = prob
         return (best_start, best_end), max_prob
-
-    def save(self, model_dir, model_prefix):
-        """
-        Saves the model into model_dir with model_prefix as the model indicator
-        """
-        self.saver.save(self.sess, os.path.join(model_dir, model_prefix))
-        self.logger.info('Model saved in {}, with prefix {}.'.format(
-            model_dir, model_prefix))
-
-    def restore(self, model_dir, model_prefix):
-        """
-        Restores the model into model_dir from model_prefix as the model indicator
-        """
-        self.saver.restore(self.sess, os.path.join(model_dir, model_prefix))
-        self.logger.info('Model restored from {}, with prefix {}'.format(
-            model_dir, model_prefix))
