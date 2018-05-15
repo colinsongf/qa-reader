@@ -17,7 +17,7 @@ from tqdm import tqdm
 class CMRCDataset(object):
 
     def __init__(self, max_p_len, max_q_len,
-                 train_files=[], dev_files=[], test_files=[])
+                 train_files=[], dev_files=[], test_files=[]):
         self.logger = logging.getLogger('qarc')
         self.max_p_len = max_p_len
         self.max_q_len = max_q_len
@@ -68,25 +68,37 @@ class CMRCDataset(object):
         Returns:
             one batch of data
         """
-        raw_data = [data[i] for i in indices]
-        batch_data = {'question_token_ids': [],
+
+        batch_data = {'origin_raw_data': [data[i] for i in indices],
+                      'raw_data': [],
+                      'question_token_ids': [],
                       'question_length': [],
                       'passage_token_ids': [],
                       'passage_length': [],
                       'start_id': [],
                       'end_id': []}
-        for sidx, sample in enumerate(raw_data):
+        for sidx, sample in enumerate(batch_data['origin_raw_data']):
+
             passage_token_ids = sample['passage_token_ids']
-            passage_length = sample['passage_length']
-            for qaidx in range(len(sample['qas'])):
+            # print(sample)
+            # passage_length = sample['passage_length']
+            for qaidx in range(len(sample['segmented_qas'])):
                 question_token_ids = sample['segmented_qas'][qaidx]['question_token_ids']
                 batch_data['question_token_ids'].append(question_token_ids)
                 batch_data['question_length'].append(len(question_token_ids))
                 batch_data['passage_token_ids'].append(passage_token_ids)
-                batch_data['passage_length'].append(passage_length)
+                batch_data['passage_length'].append(
+                    min(len(passage_token_ids), self.max_p_len))
                 answer_span = sample['segmented_qas'][qaidx]['answer_span']
                 batch_data['start_id'].append(answer_span[0])
                 batch_data['end_id'].append(answer_span[1])
+
+                one_raw_data = dict()
+                one_raw_data['segmented_context_text'] = sample['segmented_context_text']
+                one_raw_data['segmented_query_text'] = sample['segmented_qas'][qaidx]['segmented_query_text']
+                one_raw_data['segmented_answer'] = sample['segmented_qas'][qaidx]['segmented_answer']
+                one_raw_data['query_id'] = sample['segmented_qas'][qaidx]['query_id']
+                batch_data['raw_data'].append(one_raw_data)
 
         batch_data, padded_p_len, padded_q_len = self._dynamic_padding(
             batch_data, pad_id)

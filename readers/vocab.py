@@ -177,8 +177,8 @@ class Vocab(object):
         for idx in range(self.size()):
             embedding = vec_helper.getVectorByWord(self.get_token(idx))
             self.embeddings[idx] = embedding
-        print(self.embeddings.shape)
-        print(self.embed_dim)
+        # print(self.embeddings.shape)
+        # print(self.embed_dim)
 
     def convert_to_ids(self, tokens):
         """

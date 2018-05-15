@@ -19,7 +19,7 @@ import logging
 from brc_dataset import BRCDataset
 from cmrc_dataset import CMRCDataset
 from vocab import Vocab
-from rc_model.bidaf import Bidaf
+from rc_model.dubidaf import DuBidaf
 from rc_model.mlstm import Mlstm
 from rc_model.qanet import QAnet
 from rc_model.rnet import Rnet
@@ -57,7 +57,7 @@ def choose_algo(algo, vocab, config):
     choose the algorithm
     """
     if algo == 'BIDAF':
-        rc_model = Bidaf(vocab, config)
+        rc_model = DuBidaf(vocab, config)
     elif algo == 'MLSTM':
         rc_model = Mlstm(vocab, config)
     elif algo == 'QANET':
@@ -221,12 +221,26 @@ def run():
     args = parse_args()
     dic = {'configs.yaml': args.app_prof, 'params.yaml': args.params_prof}
     config = Config(dic)
-    print(config)
 
+    logger = logging.getLogger("qarc")
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.info('Running with args : {}'.format(config))
 
-def main():
-    run()
+    if args.prepare:
+        prepare(config)
+    if args.train:
+        train(args, config)
+    if args.evaluate:
+        evaluate(args, config)
+    if args.predict:
+        predict(args, config)
 
 
 if __name__ == '__main__':
-    main()
+    run()
