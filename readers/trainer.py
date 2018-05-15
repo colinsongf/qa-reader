@@ -8,12 +8,12 @@
 
 import logging
 import tensorflow as tf
-from utils import get_feed_dict, average_gradients, get_opt
+from evaluator import Evaluator
+from general import get_feed_dict, average_gradients, get_opt
 
 
 class Trainer(object):
-    def __init__(self, sess, config, model, vocab):
-        self.sess = sess
+    def __init__(self, config, model, vocab):
         self.config = config
         self.vocab = vocab
         self.optim_type = config.optim
@@ -21,24 +21,25 @@ class Trainer(object):
         self.model = model
         self.opt = get_opt(self.optim_type, self.learning_rate)
         self.loss = model.get_loss()
-        self.global_step = model.get_global_step()
-        self.summary = model.summary
+        self.global_step = model.global_step
+        # self.summary = model.summary
         self.grads = self.opt.compute_gradients(self.loss)
         self.train_op = self.opt.apply_gradients(
             self.grads, global_step=self.global_step)
-        self.evaluator = Evaluator()
         self.logger = logging.getLogger('qarc')
         sess_config = tf.ConfigProto()
         sess_config.gpu_options.allow_growth = True
         self.sess = tf.Session(config=sess_config)
         self.saver = tf.train.Saver()
         self.sess.run(tf.global_variables_initializer())
+        self.evaluator = Evaluator(self.sess, self.model, self.config)
 
     def get_train_op(self):
         return self.train_op
 
     def step(self, batch, get_summary=False):
-        feed_dict = get_feed_dict(model, batch, self.config.dropout_keep_prob)
+        feed_dict = get_feed_dict(
+            self.model, batch, self.config.dropout_keep_prob)
 
         if get_summary:
             loss, summary, train_op = \
@@ -70,8 +71,7 @@ class Trainer(object):
                 n_batch_loss = 0
         return 1.0 * total_loss / total_num
 
-    def train(self, data, epochs, batch_size, save_dir, save_prefix,
-              dropout_keep_prob=1.0, evaluate=True):
+    def train(self, data, epochs, batch_size, save_dir, save_prefix, evaluate=True):
         """
         Train the model with data
         Args:
@@ -89,7 +89,7 @@ class Trainer(object):
             self.logger.info('Training the model for epoch {}'.format(epoch))
             train_batches = data.gen_mini_batches(
                 'train', batch_size, pad_id, shuffle=True)
-            train_loss = self._train_epoch(train_batches, dropout_keep_prob)
+            train_loss = self._train_epoch(train_batches)
             self.logger.info(
                 'Average train loss for epoch {} is {}'.format(epoch, train_loss))
 
@@ -114,7 +114,7 @@ class Trainer(object):
                 self.save(save_dir, save_prefix + '_' + str(epoch))
 
     def save(self, model_dir, model_prefix):
-            """
+        """
         Saves the model into model_dir with model_prefix as the model indicator
         """
         self.saver.save(self.sess, os.path.join(model_dir, model_prefix))
@@ -156,7 +156,3 @@ class MultiGPUTrainer(object):
 
     def step(self, sess, batches, get_summary=False):
         pass
-
-
-class Evaluator(object):
-    pass

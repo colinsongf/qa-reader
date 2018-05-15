@@ -204,6 +204,22 @@ def find_answer_span(sample):
     return sample
 
 
+def split_qas(data):
+    result = []
+    for sample in data:
+        for qa in sample['segmented_qas']:
+            new_sample = {}
+            new_sample['context_id'] = sample['context_id']
+            new_sample['segmented_title'] = sample['segmented_title']
+            new_sample['segmented_context_text'] = sample['segmented_context_text']
+            new_sample['segmented_query_text'] = qa['segmented_query_text']
+            new_sample['segmented_answer'] = qa['segmented_answer']
+            new_sample['query_id'] = qa['query_id']
+            new_sample['answer_span'] = qa['answer_span']
+            result.append(new_sample)
+    return result
+
+
 def find_answer_span_all():
     files = {'../data/raw/cmrc2018/train.segmented.json': '../data/preprocessed/cmrc2018/trainset/train.json',
              '../data/raw/cmrc2018/dev.segmented.json': '../data/preprocessed/cmrc2018/devset/dev.json',
@@ -214,6 +230,7 @@ def find_answer_span_all():
         result = []
         for sample in data:
             result.append(find_answer_span(sample))
+        result = split_qas(result)
         with open(new_file, 'w') as fout:
             json.dump(result, fout, ensure_ascii=False)
 

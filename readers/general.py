@@ -34,6 +34,7 @@ def get_opt(optim_type, learning_rate):
     else:
         raise NotImplementedError(
             'Unsupported optimizer: {}'.format(optim_type))
+    return opt
 
 
 def average_gradients(tower_grads):

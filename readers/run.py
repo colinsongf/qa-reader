@@ -24,6 +24,8 @@ from rc_model.mlstm import Mlstm
 from rc_model.qanet import QAnet
 from rc_model.rnet import Rnet
 from utils import Config
+from trainer import Trainer
+from evaluator import Evaluator
 
 
 def parse_args():
@@ -89,8 +91,8 @@ def prepare(config):
         qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                                config.train_files, config.dev_files, config.test_files)
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                               config.train_files, config.dev_files, config.test_files)
 
     logger.info('Building vocabulary...')
     vocab = Vocab(lower=True)
@@ -126,26 +128,26 @@ def train(args, config):
         qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                                config.train_files, config.dev_files, config.test_files)
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                               config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
 
     rc_model = choose_algo(args.algo, vocab, config)
+    trainer = Trainer(config, rc_model, vocab)
     if not rc_model:
         raise NotImplementedError(
             'The algorithm {} is not implemented.'.format(args.algo))
     if args.restore:
         logger.info('Restoring the model...')
-        rc_model.restore(model_dir=config.model_dir, model_prefix=args.algo)
+        trainer.restore(model_dir=config.model_dir, model_prefix=args.algo)
     else:
         logger.info('Initialize the model...')
 
     logger.info('Training the model...')
-    rc_model.train(qarc_data, config.epochs, config.batch_size,
-                   save_dir=config.model_dir,
-                   save_prefix=args.algo,
-                   dropout_keep_prob=config.dropout_keep_prob)
+    trainer.train(qarc_data, config.epochs, config.batch_size,
+                  save_dir=config.model_dir,
+                  save_prefix=args.algo)
     logger.info('Done with model training!')
 
 
@@ -162,8 +164,8 @@ def evaluate(args, config):
         qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                                config.train_files, config.dev_files, config.test_files)
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                               config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
     logger.info('Restoring the model...')
@@ -197,8 +199,8 @@ def predict(args, config):
         qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = CMRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
-                                config.train_files, config.dev_files, config.test_files)
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+                               config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
     logger.info('Restoring the model...')

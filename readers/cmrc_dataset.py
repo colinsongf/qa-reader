@@ -48,14 +48,14 @@ class CMRCDataset(object):
         """
         Loads the dataset
         """
-        data_set = []
+        # data_set = []
         with open(data_path, 'r') as fin:
-            data = json.load(fin)
-        for sample in data:
-            del sample['context_text']
-            del sample['qas']
-            del sample['title']
-            data_set.append(sample)
+            data_set = json.load(fin)
+        # for sample in data:
+        #     del sample['context_text']
+        #     del sample['qas']
+        #     del sample['title']
+        #     data_set.append(sample)
         return data_set
 
     def _one_mini_batch(self, data, indices, pad_id):
@@ -69,36 +69,24 @@ class CMRCDataset(object):
             one batch of data
         """
 
-        batch_data = {'origin_raw_data': [data[i] for i in indices],
-                      'raw_data': [],
+        batch_data = {'raw_data': [data[i] for i in indices],
                       'question_token_ids': [],
                       'question_length': [],
                       'passage_token_ids': [],
                       'passage_length': [],
                       'start_id': [],
                       'end_id': []}
-        for sidx, sample in enumerate(batch_data['origin_raw_data']):
-
+        for sidx, sample in enumerate(batch_data['raw_data']):
+            question_token_ids = sample['question_token_ids']
             passage_token_ids = sample['passage_token_ids']
-            # print(sample)
-            # passage_length = sample['passage_length']
-            for qaidx in range(len(sample['segmented_qas'])):
-                question_token_ids = sample['segmented_qas'][qaidx]['question_token_ids']
-                batch_data['question_token_ids'].append(question_token_ids)
-                batch_data['question_length'].append(len(question_token_ids))
-                batch_data['passage_token_ids'].append(passage_token_ids)
-                batch_data['passage_length'].append(
-                    min(len(passage_token_ids), self.max_p_len))
-                answer_span = sample['segmented_qas'][qaidx]['answer_span']
-                batch_data['start_id'].append(answer_span[0])
-                batch_data['end_id'].append(answer_span[1])
-
-                one_raw_data = dict()
-                one_raw_data['segmented_context_text'] = sample['segmented_context_text']
-                one_raw_data['segmented_query_text'] = sample['segmented_qas'][qaidx]['segmented_query_text']
-                one_raw_data['segmented_answer'] = sample['segmented_qas'][qaidx]['segmented_answer']
-                one_raw_data['query_id'] = sample['segmented_qas'][qaidx]['query_id']
-                batch_data['raw_data'].append(one_raw_data)
+            answer_span = sample['answer_span']
+            batch_data['passage_token_ids'].append(passage_token_ids)
+            batch_data['question_token_ids'].append(question_token_ids)
+            batch_data['question_length'].append(len(question_token_ids))
+            batch_data['passage_length'].append(
+                min(len(passage_token_ids), self.max_p_len))
+            batch_data['start_id'].append(answer_span[0])
+            batch_data['end_id'].append(answer_span[1])
 
         batch_data, padded_p_len, padded_q_len = self._dynamic_padding(
             batch_data, pad_id)
@@ -137,11 +125,11 @@ class CMRCDataset(object):
                 'No data set named as {}'.format(set_name))
         if data_set is not None:
             for sample in data_set:
+                # print(sample)
                 for token in sample['segmented_context_text']:
                     yield token
-                for qa in sample['segmented_qas']:
-                    for token in qa['segmented_query_text']:
-                        yield token
+                for token in sample['segmented_query_text']:
+                    yield token
 
     def convert_to_ids(self, vocab):
         """
@@ -155,9 +143,8 @@ class CMRCDataset(object):
             for sample in data_set:
                 sample['passage_token_ids'] = vocab.convert_to_ids(
                     sample['segmented_context_text'])
-                for qa in sample['segmented_qas']:
-                    qa['question_token_ids'] = vocab.convert_to_ids(
-                        qa['segmented_query_text'])
+                sample['question_token_ids'] = vocab.convert_to_ids(
+                    sample['segmented_query_text'])
 
     def gen_mini_batches(self, set_name, batch_size, pad_id, shuffle=True):
         """
