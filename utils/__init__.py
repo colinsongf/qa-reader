@@ -25,6 +25,8 @@ Date:    2017/10/06 18:23:06
 
 from .dureader_eval import compute_bleu_rouge
 from .dureader_eval import normalize
+from .cmrc2018_evaluate import evaluate_
+from .cmrc2018_evaluate import evaluate
 from .preprocess import find_fake_answer
 from .preprocess import find_best_question_match
 from .vec_helper import BenebotVector
@@ -32,6 +34,8 @@ from .parameter import Config
 
 __all__ = [
     'compute_bleu_rouge',
+    'evaluate_',
+    'evaluate',
     'normalize',
     'find_fake_answer',
     'find_best_question_match',

@@ -12,6 +12,7 @@ import logging
 from general import get_feed_dict
 from utils import compute_bleu_rouge
 from utils import normalize
+from utils import evaluate_
 
 
 class Evaluator(object):
@@ -61,7 +62,7 @@ class Evaluator(object):
                 else:
                     pred_answers.append({'query_id': sample['query_id'],
                                          'answers': [best_answer],
-                                         'ground_true': answers})
+                                         'ground_truth': answers})
 
         if result_dir is not None and result_prefix is not None:
             result_file = os.path.join(result_dir, result_prefix + '.json')
@@ -81,12 +82,13 @@ class Evaluator(object):
             for pred, ref in zip(pred_answers, ref_answers):
                 query_id = ref['query_id']
                 if len(ref['answers']) > 0:
-                    pred_dict[query_id] = normalize(pred['answers'])
-                    ref_dict[query_id] = normalize(ref['answers'])
-            bleu_rouge = compute_bleu_rouge(pred_dict, ref_dict)
+                    pred_dict[query_id] = pred['answers']
+                    ref_dict[query_id] = ref['answers']
+            F1, EM, TOTAL, SKIP = evaluate_(ref_dict, pred_dict)
+            AVG = (EM + F1) * 0.5
         else:
-            bleu_rouge = None
-        return ave_loss, bleu_rouge
+            F1, EM, TOTAL, SKIP = None, None, None, None
+        return ave_loss, F1, EM, AVG
 
     def find_best_answer(self, sample, start_prob, end_prob):
 

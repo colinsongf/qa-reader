@@ -85,7 +85,7 @@ class Trainer(object):
             evaluate: whether to evaluate the model on test set after each epoch
         """
         pad_id = self.vocab.get_id(self.vocab.pad_token)
-        max_bleu_4 = 0
+        max_avg = 0
         for epoch in range(1, epochs + 1):
             self.logger.info('Training the model for epoch {}'.format(epoch))
             train_batches = data.gen_mini_batches(
@@ -100,14 +100,15 @@ class Trainer(object):
                 if data.dev_set is not None:
                     eval_batches = data.gen_mini_batches(
                         'dev', batch_size, pad_id, shuffle=False)
-                    eval_loss, bleu_rouge = self.evaluator.evaluate(
+                    eval_loss, f1, em, avg = self.evaluator.evaluate(
                         eval_batches, result_dir=self.config.result_dir, result_prefix='dev.predicted')
                     self.logger.info('Dev eval loss {}'.format(eval_loss))
-                    self.logger.info('Dev eval result: {}'.format(bleu_rouge))
+                    self.logger.info(
+                        'Dev eval result: F1: {:.3f} EM: {:.3f} AVG: {:.3f}'.format(f1, em, avg))
 
-                    if bleu_rouge['Bleu-4'] > max_bleu_4:
+                    if avg > max_avg:
                         self.save(save_dir, save_prefix)
-                        max_bleu_4 = bleu_rouge['Bleu-4']
+                        max_avg = avg
                 else:
                     self.logger.warning(
                         'No dev set is loaded for evaluation in the dataset!')
