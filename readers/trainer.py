@@ -6,6 +6,7 @@
 	* @desc [description]
 """
 
+import os
 import logging
 import tensorflow as tf
 from evaluator import Evaluator
@@ -100,7 +101,7 @@ class Trainer(object):
                     eval_batches = data.gen_mini_batches(
                         'dev', batch_size, pad_id, shuffle=False)
                     eval_loss, bleu_rouge = self.evaluator.evaluate(
-                        eval_batches)
+                        eval_batches, result_dir=self.config.result_dir, result_prefix='dev.predicted')
                     self.logger.info('Dev eval loss {}'.format(eval_loss))
                     self.logger.info('Dev eval result: {}'.format(bleu_rouge))
 
