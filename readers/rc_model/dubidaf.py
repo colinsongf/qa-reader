@@ -12,8 +12,6 @@ import logging
 import json
 import numpy as np
 import tensorflow as tf
-from utils import compute_bleu_rouge
-from utils import normalize
 from rc_model.layers.basic_rnn import rnn
 from rc_model.layers.match_layer import MatchLSTMLayer
 from rc_model.layers.match_layer import AttentionFlowMatchLayer

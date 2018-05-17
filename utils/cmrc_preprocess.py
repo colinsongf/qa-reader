@@ -236,7 +236,7 @@ def find_answer_span_all():
 
 
 def main():
-    # segment_all()
+    segment_all()
     find_answer_span_all()
 
 
