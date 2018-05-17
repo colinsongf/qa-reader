@@ -44,29 +44,39 @@ def rebuild_delimeters(delimeters):
 
 
 def segment(sample):
+    result = []
     context_text = sample['context_text']
     delimeters = [str(qa['answers'][0]) for qa in sample['qas']]
     # delimeters = rebuild_delimeters(delimeters)
     split_context_text = re_split(context_text, delimeters)
-    segmented_context_text = []
-    segmented_context_text_list = [list(jieba.cut(part_context_text))
-                                   for part_context_text in split_context_text]
-    for l in segmented_context_text_list:
-        segmented_context_text.extend(l)
-    segmented_title = list(jieba.cut(sample['title']))
+    context_text_tokens = []
+    context_text_tokens_list = [list(jieba.cut(part_context_text))
+                                for part_context_text in split_context_text]
+    for l in context_text_tokens_list:
+        context_text_tokens.extend(l)
+    context_text_chars = [list(token) for token in context_text_tokens]
+    title_tokens = list(jieba.cut(sample['title']))
     segmented_qas = []
     for qa in sample['qas']:
-        segmented_qa = {}
-        segmented_query_text = list(jieba.cut(qa['query_text']))
-        segmented_answer = list(jieba.cut(str(qa['answers'][0])))
-        segmented_qa['segmented_query_text'] = segmented_query_text
-        segmented_qa['segmented_answer'] = segmented_answer
-        segmented_qa['query_id'] = qa['query_id']
-        segmented_qas.append(segmented_qa)
-    sample['segmented_context_text'] = segmented_context_text
-    sample['segmented_title'] = segmented_title
-    sample['segmented_qas'] = segmented_qas
-    return sample
+        ssample = {}
+        ssample['context_id'] = sample['context_id']
+        ssample['title'] = sample['title']
+        ssample['context_text'] = sample['context_text']
+        ssample['query_text'] = qa['query_text']
+        ssample['query_id'] = qa['query_id']
+        ssample['answers'] = qa['answers']
+
+        query_text_tokens = list(jieba.cut(qa['query_text']))
+        query_text_chars = [list(token) for token in query_text_tokens]
+        answer_tokens = list(jieba.cut(str(qa['answers'][0])))
+        ssample['query_text_tokens'] = query_text_tokens
+        ssample['answer_tokens'] = answer_tokens
+        ssample['context_text_tokens'] = context_text_tokens
+        ssample['title_tokens'] = title_tokens
+        ssample['context_text_chars'] = context_text_chars
+        ssample['query_text_chars'] = query_text_chars
+        result.append(ssample)
+    return result
 
 
 def segment_all():
@@ -79,7 +89,7 @@ def segment_all():
             data = json.load(fin)
         result = []
         for sample in data:
-            result.append(segment(sample))
+            result.extend(segment(sample))
         with open(new_file, 'w') as fout:
             json.dump(result, fout, ensure_ascii=False)
 
@@ -164,43 +174,44 @@ def longest_common_substring(s1, s2):
 
 
 def find_answer_span(sample):
-    segmented_context_text = sample['segmented_context_text']
-    for qa in sample['segmented_qas']:
-        answer_span = []
-        segmented_answer = qa['segmented_answer']
-        segmented_query_text = qa['segmented_query_text']
-        start_pos = knuth_morris_pratt(
-            segmented_context_text, segmented_answer)
-        start_pos = list(start_pos)
-        if len(start_pos) == 0:
-            start, end = longest_common_substring(
-                segmented_context_text, segmented_answer)
-            start = start - 2 if start - 2 >= 0 else start
-            end = end + 2 if end + 2 < len(segmented_context_text) else end
-            answer_span.append(start)
-            answer_span.append(end)
-        elif len(start_pos) == 1:
-            start = start_pos[0]
-            end = start + len(segmented_answer)
-            answer_span.append(start)
-            answer_span.append(end)
-        else:
-            best_start = -1
-            max_match = 0
-            for start in start_pos:
-                end = start + len(segmented_answer)
-                start = start - 5 if start - 5 >= 0 else start
-                end = end + 5 if end + 5 < len(segmented_context_text) else end
-                fake_query_text = segmented_context_text[start:end]
-                _, index = longest_common_subsequence(
-                    segmented_query_text, fake_query_text)
-                if len(index) > max_match:
-                    best_start = start
-            start = best_start
-            end = start + len(segmented_answer)
-            answer_span.append(start)
-            answer_span.append(end)
-        qa['answer_span'] = answer_span
+    context_text_tokens = sample['context_text_tokens']
+
+    answer_span = []
+    answer_tokens = sample['answer_tokens']
+    query_text_tokens = sample['query_text_tokens']
+    start_pos = knuth_morris_pratt(
+        context_text_tokens, answer_tokens)
+    start_pos = list(start_pos)
+    if len(start_pos) == 0:
+        start, end = longest_common_substring(
+            context_text_tokens, answer_tokens)
+        start = start - 2 if start - 2 >= 0 else start
+        end = end + 2 if end + 2 < len(context_text_tokens) else end
+        answer_span.append(start)
+        answer_span.append(end)
+    elif len(start_pos) == 1:
+        start = start_pos[0]
+        end = start + len(answer_tokens)
+        answer_span.append(start)
+        answer_span.append(end)
+    else:
+        best_start = -1
+        max_match = 0
+        for start in start_pos:
+            end = start + len(answer_tokens)
+            start = start - 5 if start - 5 >= 0 else start
+            end = end + 5 if end + 5 < len(context_text_tokens) else end
+            fake_query_text = context_text_tokens[start:end]
+            _, index = longest_common_subsequence(
+                query_text_tokens, fake_query_text)
+            if len(index) > max_match:
+                best_start = start
+        start = best_start
+        end = start + len(answer_tokens)
+        answer_span.append(start)
+        answer_span.append(end)
+
+    sample['answer_span'] = answer_span
     return sample
 
 
@@ -227,12 +238,17 @@ def find_answer_span_all():
     for file, new_file in files.items():
         with open(file, 'r') as fin:
             data = json.load(fin)
+
         result = []
         for sample in data:
             result.append(find_answer_span(sample))
-        result = split_qas(result)
+
         with open(new_file, 'w') as fout:
             json.dump(result, fout, ensure_ascii=False)
+
+        demo_file = new_file.replace('preprocessed', 'demo')
+        with open(demo_file, 'w') as fout:
+            json.dump(result[:100], fout, ensure_ascii=False)
 
 
 def main():
