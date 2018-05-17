@@ -16,11 +16,12 @@ from tqdm import tqdm
 
 class CMRCDataset(object):
 
-    def __init__(self, max_p_len, max_q_len,
+    def __init__(self, max_p_len, max_q_len, max_char_len,
                  train_files=[], dev_files=[], test_files=[]):
         self.logger = logging.getLogger('qarc')
         self.max_p_len = max_p_len
         self.max_q_len = max_q_len
+        self.max_char_len = max_char_len
 
         self.train_set, self.dev_set, self.test_set = [], [], []
         if train_files:
@@ -131,6 +132,35 @@ class CMRCDataset(object):
                 for token in sample['segmented_query_text']:
                     yield token
 
+    def char_iter(self, set_name=None):
+        """
+        Iterates over all the char in the dataset
+        Args:
+            set_name: if it is set, then the specific set will be used
+        Returns:
+            a generator
+        """
+        if set_name is None:
+            data_set = self.train_set + self.dev_set + self.test_set
+        elif set_name == 'train':
+            data_set = self.train_set
+        elif set_name == 'dev':
+            data_set = self.dev_set
+        elif set_name == 'test':
+            data_set = self.test_set
+        else:
+            raise NotImplementedError(
+                'No data set named as {}'.format(set_name))
+        if data_set is not None:
+            for sample in data_set:
+                # print(sample)
+                for token in sample['context_text_chars']:
+                    for char in token:
+                        yield char
+                for token in sample['query_text_chars']:
+                    for char in token:
+                        yield char
+
     def convert_to_ids(self, vocab):
         """
         Convert the question and passage in the original dataset to ids
@@ -141,10 +171,18 @@ class CMRCDataset(object):
             if data_set is None:
                 continue
             for sample in data_set:
-                sample['passage_token_ids'] = vocab.convert_to_ids(
-                    sample['segmented_context_text'])
-                sample['question_token_ids'] = vocab.convert_to_ids(
-                    sample['segmented_query_text'])
+                sample['passage_token_ids'] = vocab.convert_word_to_ids(
+                    sample['context_text_tokens'])
+                sample['question_token_ids'] = vocab.convert_word_to_ids(
+                    sample['query_text_tokens'])
+                sample['passage_char_ids'] = []
+                sample['question_char_ids'] = []
+                for chars in sample['context_text_chars']:
+                    sample['passage_char_ids'].append(
+                        vocab.convert_char_to_ids(chars))
+                for chars in sample['query_text_chars']:
+                    sample['question_char_ids'].append(
+                        vocab.convert_char_to_ids(chars))
 
     def gen_mini_batches(self, set_name, batch_size, pad_id, shuffle=True):
         """

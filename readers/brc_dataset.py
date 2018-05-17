@@ -25,7 +25,7 @@ class BRCDataset(object):
     This module implements the APIs for loading and using baidu reading comprehension dataset
     """
 
-    def __init__(self, max_p_num, max_p_len, max_q_len,
+    def __init__(self, max_p_num, max_p_len, max_q_len, max_char_len,
                  train_files=[], dev_files=[], test_files=[]):
         self.logger = logging.getLogger("qarc")
         self.max_p_num = max_p_num

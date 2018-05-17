@@ -14,15 +14,19 @@ default: &DEFAULT
     dropout_keep_prob: 1
     batch_size: 4
     epochs: 20
-    embed_size: 300
+    word_embed_size: 300
+    char_embed_size: 64
     hidden_size: 150
     max_p_num: 1
     max_p_len: 500
     max_q_len: 60
     max_a_len: 200
+    max_char_len: 4
     gpu: 1
-gru: &GRU
+qanet: &QANET
     <<: *DEFAULT
-    cell: gru
-lstm: &LSTM
-    <<: *DEFAULT
+    l2_norm: 3e-7
+    dropout: 0.1
+    decay: 0.9999
+    num_head: 1
+    grad_clip: 5.0

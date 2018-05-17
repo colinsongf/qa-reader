@@ -34,12 +34,12 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(
         'Reading Comprehension on BaiduRC dataset')
-    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='BIDAF',
+    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='QANET',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
                         default='cmrc2018_debug',
                         help='choose config profile to use')
-    parser.add_argument('--params_prof', choices=['gru', 'lstm'], default='lstm',
+    parser.add_argument('--params_prof', choices=['qanet', 'default'], default='qanet',
                         help='choose params profile to use')
     parser.add_argument('--prepare', action='store_true',
                         help='create the directories, prepare the vocabulary and embeddings')
@@ -88,25 +88,37 @@ def prepare(config):
 
     logger.info('Load dataset...')
     if config.dataset_name.startswith('cmrc2018'):
-        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len, config.max_char_len,
                                config.train_files, config.dev_files, config.test_files)
 
     logger.info('Building vocabulary...')
     vocab = Vocab(lower=True)
     for word in qarc_data.word_iter('train'):
-        vocab.add(word)
+        vocab.add_word(word)
+    for char in qarc_data.char_iter('train'):
+        vocab.add_char(char)
 
-    unfiltered_vocab_size = vocab.size()
+    unfiltered_vocab_word_size = vocab.word_size()
     vocab.filter_tokens_by_cnt(min_cnt=2)
-    filtered_num = unfiltered_vocab_size - vocab.size()
+    filtered_word_num = unfiltered_vocab_word_size - vocab.word_size()
     logger.info('After filter {} tokens, the final vocab size is {}'.format(
-        filtered_num, vocab.size()))
+        filtered_word_num, vocab.word_size()))
 
-    logger.info('Assigning embeddings...')
-    vocab.load_pretrained_embeddings(config.word2vec, config.embed_size)
+    unfiltered_vocab_char_size = vocab.char_size()
+    vocab.filter_chars_by_cnt(min_cnt=2)
+    filtered_char_num = unfiltered_vocab_char_size - vocab.char_size()
+    logger.info('After filter {} tokens, the final vocab size is {}'.format(
+        filtered_char_num, vocab.char_size()))
+
+    logger.info('Assigning word embeddings...')
+    vocab.load_pretrained_word_embeddings(
+        config.word2vec, config.word_embed_size)
+
+    logger.info('Assigning char embeddings...')
+    vocab.randomly_init_char_embeddings(config.char_embed_dim)
 
     logger.info('Saving vocab...')
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'wb') as fout:
@@ -125,10 +137,10 @@ def train(args, config):
         vocab = pickle.load(fin)
 
     if config.dataset_name.startswith('cmrc2018'):
-        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len, config.max_char_len,
                                config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
