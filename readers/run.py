@@ -34,7 +34,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(
         'Reading Comprehension on BaiduRC dataset')
-    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='QANET',
+    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='BIDAF',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
                         default='cmrc2018_debug',

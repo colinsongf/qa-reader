@@ -41,7 +41,7 @@ class Evaluator(object):
         total_loss, total_num = 0, 0
         for b_itx, batch in enumerate(eval_batches):
             feed_dict = get_feed_dict(
-                self.model, batch, self.config.dropout_keep_prob)
+                self.model, batch, self.config.dropout)
             start_probs, end_probs, loss = self.sess.run([self.start_probs,
                                                           self.end_probs, self.loss], feed_dict)
             total_loss += loss * len(batch['raw_data'])
@@ -53,7 +53,7 @@ class Evaluator(object):
             for sample, start_prob, end_prob in zip(batch['raw_data'], start_probs, end_probs):
                 best_answer, max_prob = self.find_best_answer(
                     sample, start_prob, end_prob)
-                answers = [''.join(sample['segmented_answer'])]
+                answers = [''.join(sample['answer_tokens'])]
                 ref_answers.append({'query_id': sample['query_id'],
                                     'answers': answers})
                 if save_full_info:

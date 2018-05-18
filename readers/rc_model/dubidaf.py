@@ -75,7 +75,8 @@ class DuBidaf(object):
         self.q_length = tf.placeholder(tf.int32, [None])
         self.start_label = tf.placeholder(tf.int32, [None])
         self.end_label = tf.placeholder(tf.int32, [None])
-        self.dropout_keep_prob = tf.placeholder(tf.float32)
+        self.dropout = tf.placeholder(tf.float32)
+        self.dropout_keep_prob = 1.0 - 0.5 * self.dropout
 
     def _embed(self):
         """
@@ -85,8 +86,9 @@ class DuBidaf(object):
         with tf.device('/cpu:0'), tf.variable_scope('word_embedding'):
             self.word_embeddings = tf.get_variable(
                 'word_embeddings',
-                shape=(self.vocab.size(), self.vocab.embed_dim),
-                initializer=tf.constant_initializer(self.vocab.embeddings),
+                shape=(self.vocab.word_size(), self.vocab.word_embed_dim),
+                initializer=tf.constant_initializer(
+                    self.vocab.word_embeddings),
                 trainable=False
             )
             self.p_emb = tf.nn.embedding_lookup(self.word_embeddings, self.p)
