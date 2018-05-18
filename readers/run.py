@@ -21,7 +21,7 @@ from cmrc_dataset import CMRCDataset
 from vocab import Vocab
 from rc_model.dubidaf import DuBidaf
 from rc_model.mlstm import Mlstm
-from rc_model.qanet import QAnet
+from rc_model.qanet import QANet
 from rc_model.rnet import Rnet
 from utils import Config
 from trainer import Trainer
@@ -63,7 +63,7 @@ def choose_algo(algo, vocab, config):
     elif algo == 'MLSTM':
         rc_model = Mlstm(vocab, config)
     elif algo == 'QANET':
-        rc_model = QAnet(vocab, config)
+        rc_model = QANet(vocab, config)
     elif algo == 'RNET':
         rc_model = Rnet(vocab, config)
     else:
@@ -110,7 +110,7 @@ def prepare(config):
     unfiltered_vocab_char_size = vocab.char_size()
     vocab.filter_chars_by_cnt(min_cnt=2)
     filtered_char_num = unfiltered_vocab_char_size - vocab.char_size()
-    logger.info('After filter {} tokens, the final vocab size is {}'.format(
+    logger.info('After filter {} chars, the final chars size is {}'.format(
         filtered_char_num, vocab.char_size()))
 
     logger.info('Assigning word embeddings...')
@@ -118,7 +118,7 @@ def prepare(config):
         config.word2vec, config.word_embed_size)
 
     logger.info('Assigning char embeddings...')
-    vocab.randomly_init_char_embeddings(config.char_embed_dim)
+    vocab.randomly_init_char_embeddings(config.char_embed_size)
 
     logger.info('Saving vocab...')
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'wb') as fout:

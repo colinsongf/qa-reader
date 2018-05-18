@@ -248,7 +248,7 @@ def find_answer_span_all():
 
         demo_file = new_file.replace('preprocessed', 'demo')
         with open(demo_file, 'w') as fout:
-            json.dump(result[:100], fout, ensure_ascii=False)
+            json.dump(result[:50], fout, ensure_ascii=False)
 
 
 def main():

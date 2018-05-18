@@ -8,14 +8,16 @@
 import tensorflow as tf
 
 
-def get_feed_dict(model, batch, dropout_keep_prob):
+def get_feed_dict(model, batch, dropout_keep_prob=0.1):
     feed_dict = {model.p: batch['passage_token_ids'],
                  model.q: batch['question_token_ids'],
                  model.p_length: batch['passage_length'],
                  model.q_length: batch['question_length'],
+                 model.ph: batch['passage_char_ids'],
+                 model.qh: batch['question_char_ids'],
                  model.start_label: batch['start_id'],
                  model.end_label: batch['end_id'],
-                 model.dropout_keep_prob: dropout_keep_prob}
+                 model.dropout: dropout_keep_prob}
     return feed_dict
 
 

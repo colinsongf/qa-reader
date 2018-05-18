@@ -72,17 +72,23 @@ class CMRCDataset(object):
 
         batch_data = {'raw_data': [data[i] for i in indices],
                       'question_token_ids': [],
+                      'question_char_ids': [],
                       'question_length': [],
                       'passage_token_ids': [],
+                      'passage_char_ids': [],
                       'passage_length': [],
                       'start_id': [],
                       'end_id': []}
         for sidx, sample in enumerate(batch_data['raw_data']):
             question_token_ids = sample['question_token_ids']
+            question_char_ids = sample['question_char_ids']
             passage_token_ids = sample['passage_token_ids']
+            passage_char_ids = sample['passage_char_ids']
             answer_span = sample['answer_span']
             batch_data['passage_token_ids'].append(passage_token_ids)
+            batch_data['passage_char_ids'].append(passage_char_ids)
             batch_data['question_token_ids'].append(question_token_ids)
+            batch_data['question_char_ids'].append(question_char_ids)
             batch_data['question_length'].append(len(question_token_ids))
             batch_data['passage_length'].append(
                 min(len(passage_token_ids), self.max_p_len))
@@ -97,13 +103,36 @@ class CMRCDataset(object):
         """
         Dynamically pads the batch_data with pad_id
         """
-        pad_p_len = min(self.max_p_len, max(batch_data['passage_length']))
-        pad_q_len = min(self.max_q_len, max(batch_data['question_length']))
-        batch_data['passage_token_ids'] = [(ids + [pad_id] * (pad_p_len - len(ids)))[: pad_p_len]
+        # pad_p_len = min(self.max_p_len, max(batch_data['passage_length']))
+        # pad_q_len = min(self.max_q_len, max(batch_data['question_length']))
+        batch_data['passage_token_ids'] = [(ids + [pad_id] * (self.max_p_len - len(ids)))[: self.max_p_len]
                                            for ids in batch_data['passage_token_ids']]
-        batch_data['question_token_ids'] = [(ids + [pad_id] * (pad_q_len - len(ids)))[: pad_q_len]
+        batch_data['question_token_ids'] = [(ids + [pad_id] * (self.max_q_len - len(ids)))[: self.max_q_len]
                                             for ids in batch_data['question_token_ids']]
-        return batch_data, pad_p_len, pad_q_len
+        pad_char_len = self.max_char_len
+
+        batch_data['question_char_ids'] = [(id_list + [[pad_id]] * (self.max_q_len - len(id_list)))[
+            :self.max_q_len] for id_list in batch_data['question_char_ids']]
+        # print('*****************************')
+        # print(batch_data['question_char_ids'])
+        # print('*****************************')
+        question_char_ids_list = []
+        for id_list in batch_data['question_char_ids']:
+            question_char_ids_list.append([(ids + [pad_id] * (pad_char_len - len(ids)))[
+                :pad_char_len] for ids in id_list])
+        batch_data['question_char_ids'] = question_char_ids_list
+
+        batch_data['passage_char_ids'] = [(id_list + [[pad_id]] * (self.max_p_len - len(id_list)))[
+            :self.max_p_len] for id_list in batch_data['passage_char_ids']]
+        passage_char_ids_list = []
+        for id_list in batch_data['passage_char_ids']:
+            passage_char_ids_list.append([(ids + [pad_id] * (pad_char_len - len(ids)))[
+                :pad_char_len] for ids in id_list])
+        batch_data['passage_char_ids'] = passage_char_ids_list
+
+        # print(np.asanyarray(passage_char_ids_list).shape)
+
+        return batch_data, self.max_p_len, self.max_q_len
 
     def word_iter(self, set_name=None):
         """
@@ -127,9 +156,9 @@ class CMRCDataset(object):
         if data_set is not None:
             for sample in data_set:
                 # print(sample)
-                for token in sample['segmented_context_text']:
+                for token in sample['context_text_tokens']:
                     yield token
-                for token in sample['segmented_query_text']:
+                for token in sample['query_text_tokens']:
                     yield token
 
     def char_iter(self, set_name=None):

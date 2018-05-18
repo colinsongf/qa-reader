@@ -191,7 +191,7 @@ class Vocab(object):
         self.char2id = {}
         self.id2char = {}
         for char in self.initial_chars:
-            self.add_char(token, cnt=0)
+            self.add_char(char, cnt=0)
         for char in filtered_chars:
             self.add_char(char, cnt=0)
 

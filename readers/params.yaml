@@ -12,7 +12,7 @@ default: &DEFAULT
     learning_rate: 0.001
     weight_decay: 0
     dropout_keep_prob: 1
-    batch_size: 4
+    batch_size: 1
     epochs: 20
     word_embed_size: 300
     char_embed_size: 64

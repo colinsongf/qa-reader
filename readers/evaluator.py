@@ -93,7 +93,7 @@ class Evaluator(object):
     def find_best_answer(self, sample, start_prob, end_prob):
 
         passage_len = min(self.max_p_len, len(
-            sample['segmented_context_text']), len(start_prob))
+            sample['context_text_tokens']), len(start_prob))
         best_start, best_end, max_prob = -1, -1, 0
         for start_idx in range(passage_len):
             for ans_len in range(self.max_a_len):
@@ -106,5 +106,5 @@ class Evaluator(object):
                     best_end = end_idx
                     max_prob = prob
         best_answer = ''.join(
-            sample['segmented_context_text'][best_start:best_end + 1])
+            sample['context_text_tokens'][best_start:best_end + 1])
         return best_answer, max_prob

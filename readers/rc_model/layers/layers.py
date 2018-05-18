@@ -203,6 +203,7 @@ def multihead_attention(queries, units, num_heads,
 def conv(inputs, output_size, bias=None, activation=None, kernel_size=1, name="conv", reuse=None):
     with tf.variable_scope(name, reuse=reuse):
         shapes = inputs.shape.as_list()
+        # print(shapes, len(shapes))
         if len(shapes) > 4:
             raise NotImplementedError
         elif len(shapes) == 4:
@@ -569,18 +570,20 @@ def optimized_trilinear_for_attention(args, c_maxlen, q_maxlen, input_keep_prob=
             dtype=dtype,
             regularizer=regularizer,
             initializer=kernel_initializer)
-        biases = tf.get_variable(
-            "linear_bias", [1],
-            dtype=dtype,
-            regularizer=regularizer,
-            initializer=bias_initializer)
+
         subres0 = tf.tile(dot(droped_args[0], weights4arg0), [1, 1, q_maxlen])
         subres1 = tf.tile(tf.transpose(
             dot(droped_args[1], weights4arg1), perm=(0, 2, 1)), [1, c_maxlen, 1])
         subres2 = batch_dot(
             droped_args[0] * weights4mlu, tf.transpose(droped_args[1], perm=(0, 2, 1)))
         res = subres0 + subres1 + subres2
-        nn_ops.bias_add(res, biases)
+        # biases = tf.get_variable(
+        #     "linear_bias", [tf.shape(res)[-1]],
+        #     dtype=dtype,
+        #     regularizer=regularizer,
+        #     initializer=bias_initializer)
+        # print(res.shape, biases)
+        # nn_ops.bias_add(res, biases)
         return res
 
 

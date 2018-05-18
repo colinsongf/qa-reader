@@ -40,8 +40,8 @@ class Trainer(object):
 
     def step(self, batch, get_summary=False):
         feed_dict = get_feed_dict(
-            self.model, batch, self.config.dropout_keep_prob)
-
+            self.model, batch)
+        # print(feed_dict)
         if get_summary:
             loss, summary, train_op = \
                 self.sess.run([self.loss, self.summary, self.train_op],
@@ -84,7 +84,7 @@ class Trainer(object):
             dropout_keep_prob: float value indicating dropout keep probability
             evaluate: whether to evaluate the model on test set after each epoch
         """
-        pad_id = self.vocab.get_id(self.vocab.pad_token)
+        pad_id = self.vocab.get_word_id(self.vocab.pad_token)
         max_avg = 0
         for epoch in range(1, epochs + 1):
             self.logger.info('Training the model for epoch {}'.format(epoch))
