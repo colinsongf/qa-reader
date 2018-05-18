@@ -16,8 +16,9 @@ from utils import evaluate_
 
 
 class Evaluator(object):
-    def __init__(self, sess, model, config):
+    def __init__(self, config, model, sess, saver):
         self.sess = sess
+        self.saver = saver
         self.model = model
         self.config = config
         self.start_probs = model.start_probs
@@ -26,6 +27,34 @@ class Evaluator(object):
         self.max_p_len = config.max_p_len
         self.max_a_len = config.max_a_len
         self.logger = logging.getLogger('qarc')
+
+    def predict(self, test_batches, result_dir=None, result_prefix=None, save_full_info=False):
+        pred_answers = []
+        for b_itx, batch in enumerate(test_batches):
+            feed_dict = get_feed_dict(
+                self.model, batch, self.config.dropout)
+            start_probs, end_probs = self.sess.run([self.start_probs,
+                                                    self.end_probs], feed_dict)
+
+            for sample, start_prob, end_prob in zip(batch['raw_data'], start_probs, end_probs):
+                best_answer, max_prob = self.find_best_answer(
+                    sample, start_prob, end_prob)
+                if save_full_info:
+                    sample['pred_answers'] = [best_answer]
+                    pred_answers.append(sample)
+                else:
+                    pred_answers.append({'query_id': sample['query_id'],
+                                         'answers': [best_answer]})
+
+        if result_dir is not None and result_prefix is not None:
+            result_file = os.path.join(result_dir, result_prefix + '.json')
+            with open(result_file, 'w') as fout:
+                for pred_answer in pred_answers:
+                    fout.write(json.dumps(
+                        pred_answer, ensure_ascii=False) + '\n')
+
+            self.logger.info('Saving {} results to {}'.format(
+                result_prefix, result_file))
 
     def evaluate(self, eval_batches, result_dir=None, result_prefix=None, save_full_info=False):
         """
@@ -108,3 +137,11 @@ class Evaluator(object):
         best_answer = ''.join(
             sample['context_text_tokens'][best_start:best_end + 1])
         return best_answer, max_prob
+
+    def restore(self, model_dir, model_prefix):
+        """
+        Restores the model into model_dir from model_prefix as the model indicator
+        """
+        self.saver.restore(self.sess, os.path.join(model_dir, model_prefix))
+        self.logger.info('Model restored from {}, with prefix {}'.format(
+            model_dir, model_prefix))

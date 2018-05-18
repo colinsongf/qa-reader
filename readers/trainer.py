@@ -31,9 +31,10 @@ class Trainer(object):
         sess_config = tf.ConfigProto()
         sess_config.gpu_options.allow_growth = True
         self.sess = tf.Session(config=sess_config)
-        self.saver = tf.train.Saver()
         self.sess.run(tf.global_variables_initializer())
-        self.evaluator = Evaluator(self.sess, self.model, self.config)
+        self.saver = tf.train.Saver()
+        self.evaluator = Evaluator(
+            self.config, self.model, self.sess, self.saver)
 
     def get_train_op(self):
         return self.train_op

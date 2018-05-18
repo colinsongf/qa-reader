@@ -16,6 +16,7 @@ import pickle
 import json
 import argparse
 import logging
+import tensorflow as tf
 from brc_dataset import BRCDataset
 from cmrc_dataset import CMRCDataset
 from vocab import Vocab
@@ -115,10 +116,10 @@ def prepare(config):
 
     logger.info('Assigning word embeddings...')
     vocab.load_pretrained_word_embeddings(
-        config.word2vec, config.word_embed_size)
+        config.word2vec, config.word_embed_dim)
 
     logger.info('Assigning char embeddings...')
-    vocab.randomly_init_char_embeddings(config.char_embed_size)
+    vocab.randomly_init_char_embeddings(config.char_embed_dim)
 
     logger.info('Saving vocab...')
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'wb') as fout:
@@ -146,6 +147,7 @@ def train(args, config):
     qarc_data.convert_to_ids(vocab)
 
     rc_model = choose_algo(args.algo, vocab, config)
+
     trainer = Trainer(config, rc_model, vocab)
     if not rc_model:
         raise NotImplementedError(
@@ -173,10 +175,10 @@ def evaluate(args, config):
         vocab = pickle.load(fin)
     assert len(config.dev_files) > 0, 'No dev files are provided.'
     if config.dataset_name.startswith('cmrc2018'):
-        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len, config.max_char_len,
                                config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
@@ -185,14 +187,22 @@ def evaluate(args, config):
     if not rc_model:
         raise NotImplementedError(
             'The algorithm {} is not implemented.'.format(args.algo))
-    rc_model.restore(model_dir=config.model_dir, model_prefix=args.algo)
+    sess_config = tf.ConfigProto()
+    sess_config.gpu_options.allow_growth = True
+    sess = tf.Session(config=sess_config)
+    sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver()
+    evaluator = Evaluator(
+        config, rc_model, sess, saver)
+    evaluator.restore(model_dir=config.model_dir, model_prefix=args.algo)
     logger.info('Evaluating the model on dev set...')
     dev_batches = qarc_data.gen_mini_batches('dev', config.batch_size,
-                                             pad_id=vocab.get_id(vocab.pad_token), shuffle=False)
-    dev_loss, dev_bleu_rouge = rc_model.evaluate(
+                                             pad_id=vocab.get_word_id(vocab.pad_token), shuffle=False)
+    dev_loss, f1, em, avg = evaluator.evaluate(
         dev_batches, result_dir=config.result_dir, result_prefix='dev.predicted')
     logger.info('Loss on dev set: {}'.format(dev_loss))
-    logger.info('Result on dev set: {}'.format(dev_bleu_rouge))
+    logger.info(
+        'Dev eval result: F1: {:.3f} EM: {:.3f} AVG: {:.3f}'.format(f1, em, avg))
     logger.info('Predicted answers are saved to {}'.format(
         os.path.join(config.result_dir)))
 
@@ -208,10 +218,10 @@ def predict(args, config):
     assert len(config.test_files) > 0, 'No test files are provided.'
 
     if config.dataset_name.startswith('cmrc2018'):
-        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len,
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
-        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len,
+        qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len, config.max_char_len,
                                config.train_files, config.dev_files, config.test_files)
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
@@ -220,12 +230,20 @@ def predict(args, config):
     if not rc_model:
         raise NotImplementedError(
             'The algorithm {} is not implemented.'.format(args.algo))
-    rc_model.restore(model_dir=config.model_dir, model_prefix=args.algo)
-    logger.info('Predicting answers for test set...')
+    saver = tf.train.Saver()
+    sess_config = tf.ConfigProto()
+    sess_config.gpu_options.allow_growth = True
+    sess = tf.Session(config=sess_config)
+    sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver()
+    evaluator = Evaluator(
+        config, rc_model, sess, saver)
+    evaluator.restore(model_dir=config.model_dir, model_prefix=args.algo)
+    logger.info('Test the model on test set...')
     test_batches = qarc_data.gen_mini_batches('test', config.batch_size,
-                                              pad_id=vocab.get_id(vocab.pad_token), shuffle=False)
-    rc_model.evaluate(test_batches,
-                      result_dir=config.result_dir, result_prefix='test.predicted')
+                                              pad_id=vocab.get_word_id(vocab.pad_token), shuffle=False)
+    evaluator.predict(
+        test_batches, result_dir=config.result_dir, result_prefix='test.predicted')
 
 
 def run():

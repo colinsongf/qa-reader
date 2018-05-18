@@ -14,8 +14,8 @@ default: &DEFAULT
     dropout_keep_prob: 1
     batch_size: 1
     epochs: 20
-    word_embed_size: 300
-    char_embed_size: 64
+    word_embed_dim: 300
+    char_embed_dim: 64
     hidden_size: 150
     max_p_num: 1
     max_p_len: 500
