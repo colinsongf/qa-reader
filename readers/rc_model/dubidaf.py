@@ -16,6 +16,7 @@ from rc_model.layers.basic_rnn import rnn
 from rc_model.layers.match_layer import MatchLSTMLayer
 from rc_model.layers.match_layer import AttentionFlowMatchLayer
 from rc_model.layers.pointer_net import PointerNetDecoder
+from rc_model.layers.layers import highway, conv
 
 
 class DuBidaf(object):
@@ -36,11 +37,12 @@ class DuBidaf(object):
         self.max_p_len = config.max_p_len
         self.max_q_len = config.max_q_len
         self.max_a_len = config.max_a_len
+        self.max_char_len = config.max_char_len
 
         # the vocab
         self.vocab = vocab
-        # self.graph = tf.Graph()
-        # with self.graph.as_default():
+        self.word_embed_dim = vocab.word_embed_dim
+        self.char_embed_dim = vocab.char_embed_dim
 
         # self.train = train
 
@@ -73,13 +75,17 @@ class DuBidaf(object):
         """
         Placeholders
         """
-        self.p = tf.placeholder(tf.int32, [None, None])
-        self.q = tf.placeholder(tf.int32, [None, None])
-        self.p_length = tf.placeholder(tf.int32, [None])
-        self.q_length = tf.placeholder(tf.int32, [None])
-        self.start_label = tf.placeholder(tf.int32, [None])
-        self.end_label = tf.placeholder(tf.int32, [None])
-        self.dropout = tf.placeholder(tf.float32)
+        self.p = tf.placeholder(tf.int32, [None, None], name="passage")
+        self.q = tf.placeholder(tf.int32, [None, None], name="question")
+        self.p_length = tf.placeholder(tf.int32, [None], name="passage_len")
+        self.q_length = tf.placeholder(tf.int32, [None], name="question_len")
+        self.ph = tf.placeholder(
+            tf.int32, [None, None, None], name="passage_char")
+        self.qh = tf.placeholder(
+            tf.int32, [None, None, None], name="question_char")
+        self.start_label = tf.placeholder(tf.int32, [None], name="start_label")
+        self.end_label = tf.placeholder(tf.int32, [None], name="end_label")
+        self.dropout = tf.placeholder(tf.float32, name="dropout")
         self.dropout_keep_prob = 1.0 - 0.5 * self.dropout
 
     def _embed(self):
@@ -95,8 +101,44 @@ class DuBidaf(object):
                     self.vocab.word_embeddings),
                 trainable=False
             )
-            self.p_emb = tf.nn.embedding_lookup(self.word_embeddings, self.p)
-            self.q_emb = tf.nn.embedding_lookup(self.word_embeddings, self.q)
+            self.char_embeddings = tf.get_variable('char_embeddings',
+                                                   shape=(self.vocab.char_size(
+                                                   ), self.vocab.char_embed_dim),
+                                                   initializer=tf.constant_initializer(
+                                                       self.vocab.char_embeddings))
+
+            ph_emb = tf.reshape(tf.nn.embedding_lookup(
+                self.char_embeddings, self.ph), [-1, self.max_char_len, self.char_embed_dim])
+            qh_emb = tf.reshape(tf.nn.embedding_lookup(
+                self.char_embeddings, self.qh), [-1, self.max_char_len, self.char_embed_dim])
+            ph_emb = tf.nn.dropout(ph_emb, 1.0 - 0.5 * self.dropout)
+            qh_emb = tf.nn.dropout(qh_emb, 1.0 - 0.5 * self.dropout)
+
+            # Bidaf style conv-highway encoder
+            ph_emb = conv(ph_emb, self.hidden_size,
+                          bias=True, activation=tf.nn.relu, kernel_size=3, name="char_conv", reuse=None)
+            qh_emb = conv(qh_emb, self.hidden_size,
+                          bias=True, activation=tf.nn.relu, kernel_size=3, name="char_conv", reuse=True)
+
+            ph_emb = tf.reduce_max(ph_emb, axis=1)
+            qh_emb = tf.reduce_max(qh_emb, axis=1)
+
+            ph_emb = tf.reshape(ph_emb, [-1, self.max_p_len, ph_emb.shape[-1]])
+            qh_emb = tf.reshape(
+                qh_emb, [-1, self.max_q_len, ph_emb.shape[-1]])
+
+            p_emb = tf.nn.dropout(tf.nn.embedding_lookup(
+                self.word_embeddings, self.p), 1.0 - 0.5 * self.dropout)
+            q_emb = tf.nn.dropout(tf.nn.embedding_lookup(
+                self.word_embeddings, self.q), 1.0 - 0.5 * self.dropout)
+
+            p_emb = tf.concat([p_emb, ph_emb], axis=2)
+            q_emb = tf.concat([q_emb, qh_emb], axis=2)
+
+            self.p_emb = highway(p_emb, size=self.hidden_size, scope="highway",
+                                 dropout=self.dropout, reuse=None)
+            self.q_emb = highway(q_emb, size=self.hidden_size, scope="highway",
+                                 dropout=self.dropout, reuse=True)
 
     def _encode(self):
         """

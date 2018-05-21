@@ -20,6 +20,7 @@ https://github.com/minsangkim142/R-net
 app = bottle.Bottle()
 query = []
 response = ""
+score = ""
 
 
 @app.get("/")
@@ -36,12 +37,12 @@ def answer():
     print("received question: {}".format(question))
     # if not passage or not question:
     #     exit()
-    global query, response
+    global query, response, score
     query = (passage, question)
     while not response:
         sleep(0.1)
-    print("received response: {}".format(response))
-    response_ = {"answer": response}
+    print("received response: {}  score: {}".format(response, score))
+    response_ = {"answer": response, "score": score}
     response = []
     return response_
 
@@ -78,7 +79,7 @@ class Demo(object):
             run_event.clear()
 
     def demo_backend(self, sess, config, model, run_event):
-        global query, response
+        global query, response, score
 
         while run_event.is_set():
             sleep(0.1)
@@ -99,9 +100,10 @@ class Demo(object):
 
                 start_prob, end_prob = sess.run(
                     [model.start_probs, model.end_probs], feed_dict=feed_dict)
-                print(query)
+                # print(query)
                 best_start, best_end, max_prob = find_best_answer(
                     start_prob[0], end_prob[0], model.max_a_len)
                 response = ''.join(
                     passage_tokens[best_start:best_end + 1])
+                score = str(max_prob)
                 query = []
