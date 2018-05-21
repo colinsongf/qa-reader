@@ -25,6 +25,7 @@ from rc_model.mlstm import Mlstm
 from rc_model.qanet import QANet
 from rc_model.rnet import Rnet
 from utils import Config
+from demo import Demo
 from trainer import Trainer
 from evaluator import Evaluator
 
@@ -44,6 +45,8 @@ def parse_args():
                         help='choose params profile to use')
     parser.add_argument('--prepare', action='store_true',
                         help='create the directories, prepare the vocabulary and embeddings')
+    parser.add_argument('--demo', action='store_true',
+                        help='run demo')
     parser.add_argument('--train', action='store_true',
                         help='train the model')
     parser.add_argument('--restore', action='store_true',
@@ -148,10 +151,10 @@ def train(args, config):
 
     rc_model = choose_algo(args.algo, vocab, config)
 
-    trainer = Trainer(config, rc_model, vocab)
     if not rc_model:
         raise NotImplementedError(
             'The algorithm {} is not implemented.'.format(args.algo))
+    trainer = Trainer(config, rc_model, vocab)
     if args.restore:
         logger.info('Restoring the model...')
         trainer.restore(model_dir=config.model_dir, model_prefix=args.algo)
@@ -230,7 +233,7 @@ def predict(args, config):
     if not rc_model:
         raise NotImplementedError(
             'The algorithm {} is not implemented.'.format(args.algo))
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
     sess_config = tf.ConfigProto()
     sess_config.gpu_options.allow_growth = True
     sess = tf.Session(config=sess_config)
@@ -244,6 +247,26 @@ def predict(args, config):
                                               pad_id=vocab.get_word_id(vocab.pad_token), shuffle=False)
     evaluator.predict(
         test_batches, result_dir=config.result_dir, result_prefix='test.predicted')
+
+
+def demo(args, config):
+    logger = logging.getLogger('qarc')
+    logger.info('Start demo...')
+
+    logger.info('Load vocab...')
+    with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'rb') as fin:
+        vocab = pickle.load(fin)
+
+    model = choose_algo(args.algo, vocab, config)
+    sess_config = tf.ConfigProto()
+    sess_config.gpu_options.allow_growth = True
+    sess = tf.Session(config=sess_config)
+    sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver()
+    saver.restore(
+        sess,  os.path.join(config.model_dir, args.algo))
+
+    demo = Demo(sess, config, model)
 
 
 def run():
@@ -272,6 +295,8 @@ def run():
         evaluate(args, config)
     if args.predict:
         predict(args, config)
+    if args.demo:
+        demo(args, config)
 
 
 if __name__ == '__main__':

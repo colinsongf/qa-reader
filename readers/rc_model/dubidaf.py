@@ -39,6 +39,10 @@ class DuBidaf(object):
 
         # the vocab
         self.vocab = vocab
+        # self.graph = tf.Graph()
+        # with self.graph.as_default():
+
+        # self.train = train
 
         self._build_graph()
 
