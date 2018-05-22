@@ -64,12 +64,8 @@ class DuBidaf(object):
         self._decode()
         self._compute_loss()
         self._create_summaries()
-        self.logger.info(
-            'Time to build graph: {} s'.format(time.time() - start_t))
-        # param_num = sum([np.prod(tf.Session.run(tf.shape(v)))
-        #                  for v in self.all_params])
         # self.logger.info(
-        #     'There are {} parameters in the model'.format(param_num))
+        #     'Time to build graph: {} s'.format(time.time() - start_t))
 
     def _setup_placeholders(self):
         """
@@ -93,7 +89,7 @@ class DuBidaf(object):
         The embedding layer, question and passage share embeddings
         """
 
-        with tf.device('/cpu:0'), tf.variable_scope('word_embedding'):
+        with tf.variable_scope('embeddings'):
             self.word_embeddings = tf.get_variable(
                 'word_embeddings',
                 shape=(self.vocab.word_size(), self.vocab.word_embed_dim),
@@ -223,8 +219,8 @@ class DuBidaf(object):
         self.end_loss, _ = sparse_nll_loss(
             probs=self.end_probs, labels=self.end_label)
         self.end_loss = tf.reduce_mean(self.end_loss)
-        self.all_params = tf.trainable_variables()
         self.loss = tf.add(self.start_loss, self.end_loss)
+        self.all_params = tf.trainable_variables()
         if self.weight_decay > 0:
             with tf.variable_scope('l2_loss'):
                 l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in self.all_params])

@@ -26,7 +26,7 @@ from rc_model.qanet import QANet
 from rc_model.rnet import Rnet
 from utils import Config
 from demo import Demo
-from trainer import Trainer
+from trainer import Trainer, MultiGPUTrainer
 from evaluator import Evaluator
 
 
@@ -55,6 +55,8 @@ def parse_args():
                         help='evaluate the model on dev set')
     parser.add_argument('--predict', action='store_true',
                         help='predict the answers for test set with trained model')
+    parser.add_argument('--use_gpus', action='store_true',
+                        help='run demo')
     return parser.parse_args()
 
 
@@ -73,6 +75,17 @@ def choose_algo(algo, vocab, config):
     else:
         rc_model = None
     return rc_model
+
+
+def get_multi_gpu_models(algo, vocab, config):
+    models = []
+    for gpu_idx in range(config.num_gpu):
+        with tf.name_scope('model_{}'.format(gpu_idx)) as scope, \
+                tf.device("/gpu:{}".format(gpu_idx)):
+            model = choose_algo(algo, vocab, config)
+            tf.get_variable_scope().reuse_variables()
+            models.append(model)
+    return models
 
 
 def prepare(config):
@@ -151,12 +164,14 @@ def train(args, config):
     logger.info('Converting text into ids...')
     qarc_data.convert_to_ids(vocab)
 
-    rc_model = choose_algo(args.algo, vocab, config)
-
-    if not rc_model:
-        raise NotImplementedError(
-            'The algorithm {} is not implemented.'.format(args.algo))
-    trainer = Trainer(config, rc_model, vocab)
+    if args.use_gpus:
+        logger.info('Init multi gpu trainer...')
+        rc_models = get_multi_gpu_models(args.algo, vocab, config)
+        trainer = MultiGPUTrainer(config, rc_models, vocab)
+    else:
+        logger.info('Init single gpu trainer...')
+        rc_model = choose_algo(args.algo, vocab, config)
+        trainer = Trainer(config, rc_model, vocab)
     if args.restore:
         logger.info('Restoring the model...')
         trainer.restore(model_dir=config.model_dir, model_prefix=args.algo)

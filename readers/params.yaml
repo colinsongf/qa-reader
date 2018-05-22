@@ -22,7 +22,7 @@ default: &DEFAULT
     max_q_len: 60
     max_a_len: 200
     max_char_len: 4
-    gpu: 1
+    num_gpu: 1
 qanet: &QANET
     <<: *DEFAULT
     l2_norm: 3e-7
