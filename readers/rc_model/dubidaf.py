@@ -63,7 +63,7 @@ class DuBidaf(object):
         self._fuse()
         self._decode()
         self._compute_loss()
-        # self._create_train_op()
+        self._create_summaries()
         self.logger.info(
             'Time to build graph: {} s'.format(time.time() - start_t))
         # param_num = sum([np.prod(tf.Session.run(tf.shape(v)))
@@ -226,6 +226,14 @@ class DuBidaf(object):
             with tf.variable_scope('l2_loss'):
                 l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in self.all_params])
             self.loss += self.weight_decay * l2_loss
+
+    def _create_summaries(self):
+        with tf.name_scope('summaries'):
+            tf.summary.scalar('start_loss', tf.squeeze(self.start_loss))
+            tf.summary.scalar('end_loss', tf.squeeze(self.end_loss))
+            tf.summary.scalar('loss', self.loss)
+            tf.summary.histogram('histogram_loss', self.loss)
+            self.summary_op = tf.summary.merge_all()
 
     def get_loss(self):
         return self.loss

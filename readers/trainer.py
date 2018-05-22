@@ -27,26 +27,33 @@ class Trainer(object):
         self.grads = self.opt.compute_gradients(self.loss)
         self.train_op = self.opt.apply_gradients(
             self.grads, global_step=self.global_step)
+        self.summary_op = model.summary_op
         self.logger = logging.getLogger('qarc')
         sess_config = tf.ConfigProto()
         sess_config.gpu_options.allow_growth = True
         self.sess = tf.Session(config=sess_config)
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver()
+        self.train_writer = tf.summary.FileWriter(os.path.join(config.summary_dir, 'train'),
+                                                  self.sess.graph)
+        self.dev_writer = tf.summary.FileWriter(os.path.join(config.summary_dir, 'dev'),
+                                                self.sess.graph)
         self.evaluator = Evaluator(
             self.config, self.model, self.sess, self.saver)
+        self.local_global_step = 1
 
     def get_train_op(self):
         return self.train_op
 
-    def step(self, batch, get_summary=False):
+    def step(self, batch, get_summary=True):
         feed_dict = get_feed_dict(
             self.model, batch)
         # print(feed_dict)
         if get_summary:
             loss, summary, train_op = \
-                self.sess.run([self.loss, self.summary, self.train_op],
+                self.sess.run([self.loss, self.summary_op, self.train_op],
                               feed_dict=feed_dict)
+            # print(start_loss.shape)
         else:
             loss, train_op = self.sess.run(
                 [self.loss, self.train_op], feed_dict=feed_dict)
@@ -64,6 +71,8 @@ class Trainer(object):
         log_every_n_batch, n_batch_loss = 50, 0
         for bitx, batch in enumerate(train_batches, 1):
             loss, summary, train_op = self.step(batch)
+            self.train_writer.add_summary(summary, self.local_global_step)
+            self.local_global_step += 1
             total_loss += loss * len(batch['raw_data'])
             total_num += len(batch['raw_data'])
             n_batch_loss += loss
@@ -87,6 +96,7 @@ class Trainer(object):
         """
         pad_id = self.vocab.get_word_id(self.vocab.pad_token)
         max_avg = 0
+        # global_step = 0
         for epoch in range(1, epochs + 1):
             self.logger.info('Training the model for epoch {}'.format(epoch))
             train_batches = data.gen_mini_batches(

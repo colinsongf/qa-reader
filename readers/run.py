@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='BIDAF',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
-                        default='cmrc2018_debug',
+                        default='cmrc2018',
                         help='choose config profile to use')
     parser.add_argument('--params_prof', choices=['qanet', 'default'], default='qanet',
                         help='choose params profile to use')
@@ -86,7 +86,9 @@ def prepare(config):
         assert os.path.exists(data_path),\
             '{} file does not exist.'.format(data_path)
     logger.info('Preparing the directories...')
-    for dir_path in [config.vocab_dir, config.model_dir, config.result_dir, config.summary_dir]:
+    train_summary_dir = os.path.join(config.summary_dir, 'train')
+    dev_summary_dir = os.path.join(config.summary_dir, 'dev')
+    for dir_path in [config.vocab_dir, config.model_dir, config.result_dir, train_summary_dir, dev_summary_dir]:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
