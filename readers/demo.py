@@ -67,6 +67,8 @@ def find_best_answer(start_prob, end_prob, max_a_len):
 class Demo(object):
     def __init__(self, sess, config, model):
         self.pad_char_len = config.max_char_len
+        self.max_p_len = config.max_p_len
+        self.max_q_len = config.max_q_len
         run_event = threading.Event()
         run_event.set()
         threading.Thread(target=self.demo_backend, args=[
@@ -89,16 +91,31 @@ class Demo(object):
                 question_tokens = list(jieba.cut(query[1]))
                 passage_token_ids = model.vocab.convert_word_to_ids(
                     passage_tokens)
+                # print(passage_token_ids)
+                passage_token_ids = passage_token_ids + \
+                    ([0] * (self.max_p_len - len(passage_token_ids)
+                            ))[: self.max_p_len]
                 question_token_ids = model.vocab.convert_word_to_ids(
                     question_tokens)
+                question_token_ids = question_token_ids + \
+                    ([0] * (self.max_q_len - len(question_token_ids)
+                            ))[: self.max_q_len]
+
                 passage_char_ids = [model.vocab.convert_char_to_ids(
                     list(word)) for word in passage_tokens]
+                passage_char_ids = passage_char_ids + \
+                    ([[0]] * (self.max_p_len - len(passage_char_ids)
+                              ))[: self.max_p_len]
                 passage_char_ids = [(ids + [0] * (self.pad_char_len - len(ids)))[
-                    :self.pad_char_len] for ids in passage_char_ids]
+                    : self.pad_char_len] for ids in passage_char_ids]
+
                 question_char_ids = [model.vocab.convert_char_to_ids(
                     list(word)) for word in question_tokens]
+                question_char_ids = question_char_ids + \
+                    ([[0]] * (self.max_q_len - len(question_char_ids)
+                              ))[: self.max_q_len]
                 question_char_ids = [(ids + [0] * (self.pad_char_len - len(ids)))[
-                    :self.pad_char_len] for ids in question_char_ids]
+                    : self.pad_char_len] for ids in question_char_ids]
 
                 feed_dict = {model.p: [passage_token_ids],
                              model.q: [question_token_ids],
@@ -116,6 +133,6 @@ class Demo(object):
                 best_start, best_end, max_prob = find_best_answer(
                     start_prob[0], end_prob[0], model.max_a_len)
                 response = ''.join(
-                    passage_tokens[best_start:best_end + 1])
+                    passage_tokens[best_start: best_end + 1])
                 score = str(max_prob)
                 query = []
