@@ -219,10 +219,12 @@ class DuBidaf(object):
 
         self.start_loss, self.labels = sparse_nll_loss(
             probs=self.start_probs, labels=self.start_label)
+        self.start_loss = tf.reduce_mean(self.start_loss)
         self.end_loss, _ = sparse_nll_loss(
             probs=self.end_probs, labels=self.end_label)
+        self.end_loss = tf.reduce_mean(self.end_loss)
         self.all_params = tf.trainable_variables()
-        self.loss = tf.reduce_mean(tf.add(self.start_loss, self.end_loss))
+        self.loss = tf.add(self.start_loss, self.end_loss)
         if self.weight_decay > 0:
             with tf.variable_scope('l2_loss'):
                 l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in self.all_params])

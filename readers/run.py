@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='BIDAF',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
-                        default='cmrc2018',
+                        default='cmrc2018_debug',
                         help='choose config profile to use')
     parser.add_argument('--params_prof', choices=['qanet', 'default'], default='qanet',
                         help='choose params profile to use')

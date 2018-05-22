@@ -111,7 +111,7 @@ class QANet(object):
 
         ph_emb = tf.reshape(ph_emb, [-1, self.max_p_len, ph_emb.shape[-1]])
         qh_emb = tf.reshape(
-            qh_emb, [-1, self.max_q_len, ph_emb.shape[-1]])
+            qh_emb, [-1, self.max_q_len, qh_emb.shape[-1]])
 
         p_emb = tf.nn.dropout(tf.nn.embedding_lookup(
             self.word_embeddings, self.p), 1.0 - 0.5 * self.dropout)
