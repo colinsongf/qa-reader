@@ -137,7 +137,9 @@ def prepare(config):
         config.word2vec, config.word_embed_dim)
 
     logger.info('Assigning char embeddings...')
-    vocab.randomly_init_char_embeddings(config.char_embed_dim)
+    # vocab.randomly_init_char_embeddings(config.char_embed_dim)
+    vocab.load_pretrained_char_embeddings(
+        config.word2vec, config.char_embed_dim)
 
     logger.info('Saving vocab...')
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'wb') as fout:

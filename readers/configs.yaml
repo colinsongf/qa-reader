@@ -7,7 +7,7 @@
 ################################################
 
 default: &DEFAULT
-    word2vec: /opt/word2vec/benebot_vector/word2vec.bin
+    word2vec: /opt/char_dic/dic_char.bin
     vocab_dir: ../data/vocab/
     model_dir: ../data/models/
     result_dir: ../data/results/

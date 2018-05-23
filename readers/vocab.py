@@ -237,7 +237,12 @@ class Vocab(object):
         # print(self.embed_dim)
 
     def load_pretrained_char_embeddings(self, embedding_path, embed_dim):
-        pass
+        self.char_embed_dim = embed_dim
+        self.char_embeddings = np.zeros((self.char_size(), embed_dim))
+        vec_helper = BenebotVector(embedding_path)
+        for idx in range(self.char_size()):
+            embedding = vec_helper.getVectorByWord(self.get_char(idx))
+            self.char_embeddings[idx] = embedding
 
     def convert_word_to_ids(self, tokens):
         """
