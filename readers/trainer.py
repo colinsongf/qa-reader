@@ -10,6 +10,10 @@ import os
 import logging
 import tensorflow as tf
 from evaluator import Evaluator
+from rc_model.dubidaf import DuBidaf
+from rc_model.mlstm import Mlstm
+from rc_model.qanet import QANet
+from rc_model.rnet import Rnet
 from general import get_feed_dict, average_gradients, get_opt
 
 
@@ -142,29 +146,50 @@ class Trainer(object):
             model_dir, model_prefix))
 
 
+def choose_algo(algo, config, vocab):
+    """
+    choose the algorithm
+    """
+    if algo == 'BIDAF':
+        rc_model = DuBidaf(vocab, config)
+    elif algo == 'MLSTM':
+        rc_model = Mlstm(vocab, config)
+    elif algo == 'QANET':
+        rc_model = QANet(vocab, config)
+    elif algo == 'RNET':
+        rc_model = Rnet(vocab, config)
+    else:
+        rc_model = None
+    return rc_model
+
+
 class MultiGPUTrainer(object):
-    def __init__(self, config, models, vocab):
+
+    def __init__(self, config, vocab, algo):
         self.config = config
         self.vocab = vocab
-        self.model = models[0]
-        self.models = models
+        self.models = []
         self.config = config
         self.optim_type = config.optim
         self.learning_rate = config.learning_rate
-        # self.opt = get_opt(self.optim_type, self.learning_rate)
-        self.opt = tf.train.AdamOptimizer(self.learning_rate)
-        self.global_step = self.model.global_step
-        self.summary_op = self.model.summary_op
         self.logger = logging.getLogger('qarc')
 
-        losses = []
-        grads_list = []
-        for gpu_idx, model in enumerate(models):
-            with tf.name_scope("grads_{}".format(gpu_idx)), tf.device("/gpu:{}".format(gpu_idx)):
-                loss = model.get_loss()
-                grads = self.opt.compute_gradients(loss)
-                losses.append(loss)
-                grads_list.append(grads)
+        # with tf.variable_scope("optimizer") as scope:
+        self.opt = get_opt(self.optim_type, self.learning_rate)
+        with tf.variable_scope(tf.get_variable_scope()) as scope:
+            losses = []
+            grads_list = []
+            for gpu_idx in range(config.num_gpu):
+                with tf.name_scope("grads_{}".format(gpu_idx)), tf.device("/gpu:{}".format(gpu_idx)):
+                    model = choose_algo(algo, config, vocab)
+                    self.models.append(model)
+                    loss = model.get_loss()
+                    grads = self.opt.compute_gradients(loss)
+                    losses.append(loss)
+                    grads_list.append(grads)
+                    tf.get_variable_scope().reuse_variables()
+        self.global_step = self.models[0].global_step
+        self.summary_op = self.models[0].summary_op
         self.loss = tf.add_n(losses) / len(losses)
         self.grads = average_gradients(grads_list)
         self.train_op = self.opt.apply_gradients(
@@ -172,6 +197,7 @@ class MultiGPUTrainer(object):
 
         sess_config = tf.ConfigProto()
         sess_config.gpu_options.allow_growth = True
+        sess_config.allow_soft_placement = True
         self.sess = tf.Session(config=sess_config)
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver()
@@ -180,7 +206,7 @@ class MultiGPUTrainer(object):
         self.dev_writer = tf.summary.FileWriter(os.path.join(config.summary_dir, 'dev'),
                                                 self.sess.graph)
         self.evaluator = Evaluator(
-            self.config, self.model, self.sess, self.saver)
+            self.config, self.models[0], self.sess, self.saver)
         self.local_global_step = 1
 
     def get_train_op(self):
@@ -190,7 +216,7 @@ class MultiGPUTrainer(object):
         feed_dict = {}
         for batch, model in zip(batches, self.models):
             feed_dict.update(get_feed_dict(
-                self.model, batch))
+                model, batch))
         # print(feed_dict)
         if get_summary:
             loss, summary, train_op = \

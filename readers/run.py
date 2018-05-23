@@ -166,8 +166,8 @@ def train(args, config):
 
     if args.use_gpus:
         logger.info('Init multi gpu trainer...')
-        rc_models = get_multi_gpu_models(args.algo, vocab, config)
-        trainer = MultiGPUTrainer(config, rc_models, vocab)
+        # rc_models = get_multi_gpu_models(args.algo, vocab, config)
+        trainer = MultiGPUTrainer(config, vocab, args.algo)
     else:
         logger.info('Init single gpu trainer...')
         rc_model = choose_algo(args.algo, vocab, config)
