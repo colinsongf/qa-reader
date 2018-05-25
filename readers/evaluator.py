@@ -73,15 +73,22 @@ class Evaluator(object):
                 self.model, batch, self.config.dropout)
             start_probs, end_probs, loss = self.sess.run([self.start_probs,
                                                           self.end_probs, self.loss], feed_dict)
+
+            # start_poses, end_poses, loss = self.sess.run(
+            #     [self.start_pos, self.end_pos, self.loss], feed_dict)
+
             total_loss += loss * len(batch['raw_data'])
             total_num += len(batch['raw_data'])
-
-            # print('start_probs:', start_probs.shape)
-            # print('end_probs:', end_probs.shape)
+            # print('start_poses:', start_probs.shape)
+            # print('end_poses:', end_probs.shape)
+            # print('loss:', loss.shape)
 
             for sample, start_prob, end_prob in zip(batch['raw_data'], start_probs, end_probs):
                 best_answer, max_prob = self.find_best_answer(
                     sample, start_prob, end_prob)
+            # for sample, start_pos, end_pos in zip(batch['raw_data'], start_poses, end_poses):
+            #     best_answer = ''.join(
+            #         sample['context_text_tokens'][best_start:best_end + 1])
                 answers = [''.join(sample['answer_tokens'])]
                 ref_answers.append({'query_id': sample['query_id'],
                                     'answers': answers})
@@ -135,7 +142,7 @@ class Evaluator(object):
                     best_end = end_idx
                     max_prob = prob
         best_answer = ''.join(
-            sample['context_text_tokens'][best_start:best_end + 1])
+            sample['context_text_tokens'][best_start:best_end])
         return best_answer, max_prob
 
     def restore(self, model_dir, model_prefix):

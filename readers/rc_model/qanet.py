@@ -52,6 +52,7 @@ class QANet(object):
         self._fuse()
         self._decode()
         self._compute_loss()
+        self._create_summaries()
         self.logger.info(
             'Time to build graph: {} s'.format(time.time() - start_t))
 
@@ -132,7 +133,7 @@ class QANet(object):
                                            num_blocks=1,
                                            num_conv_layers=4,
                                            kernel_size=7,
-                                           mask=self.p_mask,
+                                           mask=None,
                                            num_filters=self.hidden_size,
                                            num_heads=self.num_head,
                                            seq_len=self.p_length,
@@ -143,7 +144,7 @@ class QANet(object):
                                            num_blocks=1,
                                            num_conv_layers=4,
                                            kernel_size=7,
-                                           mask=self.q_mask,
+                                           mask=None,
                                            num_filters=self.hidden_size,
                                            num_heads=self.num_head,
                                            seq_len=self.q_length,
@@ -159,11 +160,13 @@ class QANet(object):
             # S = trilinear([C, Q, C*Q], input_keep_prob = 1.0 - self.dropout)
             S = optimized_trilinear_for_attention(
                 [self.p_encode, self.q_encode], self.max_p_len, self.max_q_len, input_keep_prob=1.0 - self.dropout)
-            mask_q = tf.expand_dims(self.q_mask, 1)
-            S_ = tf.nn.softmax(mask_logits(S, mask=mask_q))
-            mask_p = tf.expand_dims(self.p_mask, 2)
-            S_T = tf.transpose(tf.nn.softmax(
-                mask_logits(S, mask=mask_p), dim=1), (0, 2, 1))
+            # mask_q = tf.expand_dims(self.q_mask, 1)
+            # S_ = tf.nn.softmax(mask_logits(S, mask=mask_q))
+            S_ = tf.nn.softmax(S)
+            # mask_p = tf.expand_dims(self.p_mask, 2)
+            # S_T = tf.transpose(tf.nn.softmax(
+            # mask_logits(S, mask=mask_p), dim=1), (0, 2, 1))
+            S_T = tf.transpose(tf.nn.softmax(S, dim=1), (0, 2, 1))
             self.p2q = tf.matmul(S_, self.q_encode)
             self.q2p = tf.matmul(tf.matmul(S_, S_T), self.p_encode)
             self.attention_outputs = [self.p_encode, self.p2q,
@@ -183,7 +186,7 @@ class QANet(object):
                                    num_blocks=7,
                                    num_conv_layers=2,
                                    kernel_size=5,
-                                   mask=self.p_mask,
+                                   mask=None,
                                    num_filters=self.hidden_size,
                                    num_heads=self.num_head,
                                    seq_len=self.p_length,
@@ -199,10 +202,10 @@ class QANet(object):
                 [self.enc[1], self.enc[2]], axis=-1), 1, bias=False, name="start_pointer"), -1)
             end_logits = tf.squeeze(conv(tf.concat(
                 [self.enc[1], self.enc[3]], axis=-1), 1, bias=False, name="end_pointer"), -1)
-            self.logits = [mask_logits(start_logits, mask=self.p_mask),
-                           mask_logits(end_logits, mask=self.p_mask)]
+            # self.logits = [mask_logits(start_logits, mask=self.p_mask),
+            #                mask_logits(end_logits, mask=self.p_mask)]
 
-            self.start_probs, self.end_probs = [l for l in self.logits]
+            self.start_probs, self.end_probs = start_logits, end_logits
 
     def _compute_loss(self):
 
@@ -212,9 +215,10 @@ class QANet(object):
                 logits=logits, labels=labels)
             return loss
 
-        losses = loss(self.start_probs, self.start_label)
-        losses2 = loss(self.end_probs, self.end_label)
-        self.loss = tf.reduce_mean(losses + losses2)
+        self.start_loss = tf.reduce_mean(
+            loss(self.start_probs, self.start_label))
+        self.end_loss = tf.reduce_mean(loss(self.end_probs, self.end_label))
+        self.loss = self.start_loss + self.end_loss
 
         if self.config.l2_norm is not None:
             variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -233,6 +237,14 @@ class QANet(object):
                     v = self.var_ema.average(var)
                     if v:
                         self.assign_vars.append(tf.assign(var, v))
+
+    def _create_summaries(self):
+        with tf.name_scope('summaries'):
+            tf.summary.scalar('start_loss', tf.squeeze(self.start_loss))
+            tf.summary.scalar('end_loss', tf.squeeze(self.end_loss))
+            tf.summary.scalar('loss', self.loss)
+            tf.summary.histogram('histogram_loss', self.loss)
+            self.summary_op = tf.summary.merge_all()
 
     def get_loss(self):
         return self.loss

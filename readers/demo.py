@@ -25,7 +25,7 @@ score = ""
 
 @app.get("/")
 def home():
-    with open('demo.html', 'r') as fl:
+    with open('../data/demo.html', 'r') as fl:
         html = fl.read()
         return html
 

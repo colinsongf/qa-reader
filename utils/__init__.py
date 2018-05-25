@@ -31,6 +31,8 @@ from .preprocess import find_fake_answer
 from .preprocess import find_best_question_match
 from .vec_helper import BenebotVector
 from .parameter import Config
+from .interface_utils import find_best_answer
+from .interface_utils import get_feature
 
 __all__ = [
     'compute_bleu_rouge',
@@ -40,5 +42,7 @@ __all__ = [
     'find_fake_answer',
     'find_best_question_match',
     'BenebotVector',
-    'Config'
+    'Config',
+    'find_best_answer',
+    'get_feature'
 ]

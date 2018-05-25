@@ -24,6 +24,7 @@ from rc_model.dubidaf import DuBidaf
 from rc_model.mlstm import Mlstm
 from rc_model.qanet import QANet
 from rc_model.rnet import Rnet
+from rc_model.baseline import BaseModel
 from utils import Config
 from demo import Demo
 from trainer import Trainer, MultiGPUTrainer
@@ -35,8 +36,8 @@ def parse_args():
     Parses command line arguments.
     """
     parser = argparse.ArgumentParser(
-        'Reading Comprehension on BaiduRC dataset')
-    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET'], default='BIDAF',
+        'Reading Comprehension')
+    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET', 'BASE'], default='BASE',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
                         default='cmrc2018_debug',
@@ -72,6 +73,8 @@ def choose_algo(algo, vocab, config):
         rc_model = QANet(vocab, config)
     elif algo == 'RNET':
         rc_model = Rnet(vocab, config)
+    elif algo == 'BASE':
+        rc_model = BaseModel(vocab, config)
     else:
         rc_model = None
     return rc_model
@@ -293,7 +296,8 @@ def run():
     Prepares and runs the whole system.
     """
     args = parse_args()
-    dic = {'configs.yaml': args.app_prof, 'params.yaml': args.params_prof}
+    dic = {'../data/configs.yaml': args.app_prof,
+           '../data/params.yaml': args.params_prof}
     config = Config(dic)
 
     logger = logging.getLogger("qarc")
