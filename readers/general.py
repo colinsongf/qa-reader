@@ -9,22 +9,24 @@ import tensorflow as tf
 
 
 def get_feed_dict(model, batch, dropout=0.1):
-    # feed_dict = {model.p: batch['passage_token_ids'],
-    #              model.q: batch['question_token_ids'],
-    #              model.p_length: batch['passage_length'],
-    #              model.q_length: batch['question_length'],
-    #              model.ph: batch['passage_char_ids'],
-    #              model.qh: batch['question_char_ids'],
-    #              model.start_label: batch['start_id'],
-    #              model.end_label: batch['end_id'],
-    #              model.dropout: dropout}
     feed_dict = {model.p: batch['passage_token_ids'],
                  model.q: batch['question_token_ids'],
                  model.p_len: batch['passage_length'],
                  model.q_len: batch['question_length'],
+                 #  model.ph: batch['passage_char_ids'],
+                 #  model.qh: batch['question_char_ids'],
+                 model.ppy: batch['passage_py_ids'],
+                 model.qpy: batch['question_py_ids'],
                  model.start_label: batch['start_id'],
                  model.end_label: batch['end_id'],
                  model.dropout: dropout}
+    # feed_dict = {model.p: batch['passage_token_ids'],
+    #              model.q: batch['question_token_ids'],
+    #              model.p_len: batch['passage_length'],
+    #              model.q_len: batch['question_length'],
+    #              model.start_label: batch['start_id'],
+    #              model.end_label: batch['end_id'],
+    #              model.dropout: dropout}
     return feed_dict
 
 

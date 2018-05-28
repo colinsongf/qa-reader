@@ -37,7 +37,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(
         'Reading Comprehension')
-    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET', 'BASE'], default='BASE',
+    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET', 'BASE'], default='BIDAF',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
                         default='cmrc2018_debug',
@@ -110,7 +110,7 @@ def prepare(config):
 
     logger.info('Load dataset...')
     if config.dataset_name.startswith('cmrc2018'):
-        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len,
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len, config.max_py_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
         qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len, config.max_char_len,
@@ -122,6 +122,8 @@ def prepare(config):
         vocab.add_word(word)
     for char in qarc_data.char_iter('train'):
         vocab.add_char(char)
+    for py in qarc_data.py_iter('train'):
+        vocab.add_py(py)
 
     unfiltered_vocab_word_size = vocab.word_size()
     vocab.filter_tokens_by_cnt(min_cnt=2)
@@ -135,6 +137,12 @@ def prepare(config):
     logger.info('After filter {} chars, the final chars size is {}'.format(
         filtered_char_num, vocab.char_size()))
 
+    unfiltered_vocab_py_size = vocab.py_size()
+    vocab.filter_pys_by_cnt(min_cnt=2)
+    filtered_py_num = unfiltered_vocab_py_size - vocab.py_size()
+    logger.info('After filter {} pys, the final pys size is {}'.format(
+        filtered_py_num, vocab.py_size()))
+
     logger.info('Assigning word embeddings...')
     vocab.load_pretrained_word_embeddings(
         config.word2vec, config.word_embed_dim)
@@ -143,6 +151,9 @@ def prepare(config):
     # vocab.randomly_init_char_embeddings(config.char_embed_dim)
     vocab.load_pretrained_char_embeddings(
         config.word2vec, config.char_embed_dim)
+
+    logger.info('Assigning py embeddings...')
+    vocab.randomly_init_py_embeddings(config.py_embed_dim)
 
     logger.info('Saving vocab...')
     with open(os.path.join(config.vocab_dir, config.dataset_name + '_vocab.data'), 'wb') as fout:
@@ -161,7 +172,7 @@ def train(args, config):
         vocab = pickle.load(fin)
 
     if config.dataset_name.startswith('cmrc2018'):
-        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len,
+        qarc_data = CMRCDataset(config.max_p_len, config.max_q_len, config.max_char_len, config.max_py_len,
                                 config.train_files, config.dev_files, config.test_files)
     else:
         qarc_data = BRCDataset(config.max_p_num, config.max_p_len, config.max_q_len, config.max_char_len,

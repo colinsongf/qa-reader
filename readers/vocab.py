@@ -27,38 +27,53 @@ class Vocab(object):
     Implements a vocabulary to store the tokens in the data, with their corresponding embeddings.
     """
 
-    def __init__(self, word_filename=None, char_filename=None, initial_tokens=None, initial_chars=None, lower=False):
+    def __init__(self, word_filename=None, char_filename=None, py_filename=None, initial_tokens=None, initial_chars=None, initial_pys=None, lower=False):
         self.id2token = {}
         self.token2id = {}
         self.id2char = {}
         self.char2id = {}
+        self.id2py = {}
+        self.py2id = {}
         self.token_cnt = {}
         self.char_cnt = {}
+        self.py_cnt = {}
         self.lower = lower
 
         self.word_embed_dim = None
         self.word_embeddings = None
         self.char_embed_dim = None
         self.char_embeddings = None
+        self.py_embed_dim = None
+        self.py_embeddings = None
 
         self.pad_token = '<blank>'
         self.unk_token = '<unk>'
         self.pad_char = '<b>'
         self.unk_char = '<u>'
+        self.pad_py = '<b>'
+        self.unk_py = '<u>'
 
         self.initial_tokens = initial_tokens if initial_tokens is not None else []
         self.initial_tokens.extend([self.pad_token, self.unk_token])
         for token in self.initial_tokens:
             self.add_word(token)
+
         self.initial_chars = initial_chars if initial_chars is not None else []
         self.initial_chars.extend([self.pad_char, self.unk_char])
         for char in self.initial_chars:
             self.add_char(char)
 
+        self.initial_pys = initial_pys if initial_pys is not None else []
+        self.initial_pys.extend([self.pad_py, self.unk_py])
+        for py in self.initial_pys:
+            self.add_py(py)
+
         if word_filename is not None:
             self.load_word_from_file(word_filename)
         if char_filename is not None:
             self.load_char_from_file(char_filename)
+        if py_filename is not None:
+            self.load_py_from_file(py_filename)
 
     def word_size(self):
         """
@@ -70,6 +85,9 @@ class Vocab(object):
 
     def char_size(self):
         return len(self.id2char)
+
+    def py_size(self):
+        return len(self.id2py)
 
     def load_word_from_file(self, file_path):
         """
@@ -85,6 +103,11 @@ class Vocab(object):
         for line in open(file_path, 'r'):
             char = line.rstrip('\n')
             self.add_char(char)
+
+    def load_py_from_file(self, file_path):
+        for line in open(file_path, 'r'):
+            py = line.rstrip('\n')
+            self.add_py(py)
 
     def get_word_id(self, token):
         """
@@ -107,6 +130,13 @@ class Vocab(object):
         except KeyError:
             return self.char2id[self.unk_char]
 
+    def get_py_id(self, py):
+        py = py.lower() if self.lower else py
+        try:
+            return self.py2id[py]
+        except KeyError:
+            return self.py2id[self.unk_py]
+
     def get_token(self, idx):
         """
         gets the token corresponding to idx, returns unk token if idx is not in vocab
@@ -125,6 +155,12 @@ class Vocab(object):
             return self.id2char[idx]
         except KeyError:
             return self.unk_char
+
+    def get_py(self, idx):
+        try:
+            return self.id2py[idx]
+        except KeyError:
+            return self.unk_py
 
     def add_word(self, token, cnt=1):
         """
@@ -168,6 +204,27 @@ class Vocab(object):
                 self.char_cnt[char] = cnt
         return idx
 
+    def add_py(self, py, cnt=1):
+        """
+        adds the token to vocab
+        Args:
+            token: a string
+            cnt: a num indicating the count of the token to add, default is 1
+        """
+        py = py.lower() if self.lower else py
+        if py in self.py2id:
+            idx = self.py2id[py]
+        else:
+            idx = len(self.id2py)
+            self.id2py[idx] = py
+            self.py2id[py] = idx
+        if cnt > 0:
+            if py in self.py_cnt:
+                self.py_cnt[py] += cnt
+            else:
+                self.py_cnt[py] = cnt
+        return idx
+
     def filter_tokens_by_cnt(self, min_cnt):
         """
         filter the tokens in vocab by their count
@@ -195,6 +252,17 @@ class Vocab(object):
         for char in filtered_chars:
             self.add_char(char, cnt=0)
 
+    def filter_pys_by_cnt(self, min_cnt):
+        filtered_pys = [
+            py for py in self.py2id if self.py_cnt[py] >= min_cnt]
+        # rebuild the token x id map
+        self.py2id = {}
+        self.id2py = {}
+        for py in self.initial_pys:
+            self.add_py(py, cnt=0)
+        for py in filtered_pys:
+            self.add_py(py, cnt=0)
+
     def randomly_init_word_embeddings(self, word_embed_dim):
         """
         randomly initializes the embeddings for each token
@@ -218,6 +286,18 @@ class Vocab(object):
         for char in [self.pad_char, self.unk_char]:
             self.char_embeddings[self.get_char_id(char)] = np.zeros([
                 self.char_embed_dim])
+
+    def randomly_init_py_embeddings(self, py_embed_dim):
+        """
+        randomly initializes the embeddings for each token
+        Args:
+            embed_dim: the size of the embedding for each token
+        """
+        self.py_embed_dim = py_embed_dim
+        self.py_embeddings = np.random.rand(self.py_size(), py_embed_dim)
+        for py in [self.pad_py, self.unk_py]:
+            self.py_embeddings[self.get_py_id(py)] = np.zeros([
+                self.py_embed_dim])
 
     def load_pretrained_word_embeddings(self, embedding_path, embed_dim):
         """
@@ -244,6 +324,9 @@ class Vocab(object):
             embedding = vec_helper.getVectorByWord(self.get_char(idx))
             self.char_embeddings[idx] = embedding
 
+    def load_pretrained_py_embeddings(self, embedding_path, embed_dim):
+        pass
+
     def convert_word_to_ids(self, tokens):
         """
         Convert a list of tokens to ids, use unk_token if the token is not in vocab.
@@ -257,6 +340,10 @@ class Vocab(object):
 
     def convert_char_to_ids(self, chars):
         vec = [self.get_char_id(label) for label in chars]
+        return vec
+
+    def convert_py_to_ids(self, pys):
+        vec = [self.get_py_id(label) for label in pys]
         return vec
 
     def recover_word_from_ids(self, ids, stop_id=None):
@@ -282,3 +369,11 @@ class Vocab(object):
             if stop_id is not None and i == stop_id:
                 break
         return chars
+
+    def recover_py_from_ids(self, ids, stop_id=None):
+        pys = []
+        for i in ids:
+            pys += [self.get_py(i)]
+            if stop_id is not None and i == stop_id:
+                break
+        return pys

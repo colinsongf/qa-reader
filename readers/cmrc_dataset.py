@@ -16,12 +16,13 @@ from tqdm import tqdm
 
 class CMRCDataset(object):
 
-    def __init__(self, max_p_len, max_q_len, max_char_len,
+    def __init__(self, max_p_len, max_q_len, max_char_len, max_py_len,
                  train_files=[], dev_files=[], test_files=[]):
         self.logger = logging.getLogger('qarc')
         self.max_p_len = max_p_len
         self.max_q_len = max_q_len
         self.max_char_len = max_char_len
+        self.max_py_len = max_py_len
 
         self.train_set, self.dev_set, self.test_set = [], [], []
         if train_files:
@@ -73,22 +74,28 @@ class CMRCDataset(object):
         batch_data = {'raw_data': [data[i] for i in indices],
                       'question_token_ids': [],
                       'question_char_ids': [],
+                      'question_py_ids': [],
                       'question_length': [],
                       'passage_token_ids': [],
                       'passage_char_ids': [],
+                      'passage_py_ids': [],
                       'passage_length': [],
                       'start_id': [],
                       'end_id': []}
         for sidx, sample in enumerate(batch_data['raw_data']):
             question_token_ids = sample['question_token_ids']
             question_char_ids = sample['question_char_ids']
+            question_py_ids = sample['question_py_ids']
             passage_token_ids = sample['passage_token_ids']
             passage_char_ids = sample['passage_char_ids']
+            passage_py_ids = sample['passage_py_ids']
             answer_span = sample['answer_span']
             batch_data['passage_token_ids'].append(passage_token_ids)
             batch_data['passage_char_ids'].append(passage_char_ids)
+            batch_data['passage_py_ids'].append(passage_py_ids)
             batch_data['question_token_ids'].append(question_token_ids)
             batch_data['question_char_ids'].append(question_char_ids)
+            batch_data['question_py_ids'].append(question_py_ids)
             batch_data['question_length'].append(len(question_token_ids))
             batch_data['passage_length'].append(
                 min(len(passage_token_ids), self.max_p_len))
@@ -110,17 +117,23 @@ class CMRCDataset(object):
         batch_data['question_token_ids'] = [(ids + [pad_id] * (self.max_q_len - len(ids)))[: self.max_q_len]
                                             for ids in batch_data['question_token_ids']]
         pad_char_len = self.max_char_len
+        pad_py_len = self.max_py_len
 
         batch_data['question_char_ids'] = [(id_list + [[pad_id]] * (self.max_q_len - len(id_list)))[
             :self.max_q_len] for id_list in batch_data['question_char_ids']]
-        # print('*****************************')
-        # print(batch_data['question_char_ids'])
-        # print('*****************************')
         question_char_ids_list = []
         for id_list in batch_data['question_char_ids']:
             question_char_ids_list.append([(ids + [pad_id] * (pad_char_len - len(ids)))[
                 :pad_char_len] for ids in id_list])
         batch_data['question_char_ids'] = question_char_ids_list
+
+        batch_data['question_py_ids'] = [(id_list + [[pad_id]] * (self.max_q_len - len(id_list)))[
+            :self.max_q_len] for id_list in batch_data['question_py_ids']]
+        question_py_ids_list = []
+        for id_list in batch_data['question_py_ids']:
+            question_py_ids_list.append([(ids + [pad_id] * (pad_py_len - len(ids)))[
+                :pad_py_len] for ids in id_list])
+        batch_data['question_py_ids'] = question_py_ids_list
 
         batch_data['passage_char_ids'] = [(id_list + [[pad_id]] * (self.max_p_len - len(id_list)))[
             :self.max_p_len] for id_list in batch_data['passage_char_ids']]
@@ -129,6 +142,14 @@ class CMRCDataset(object):
             passage_char_ids_list.append([(ids + [pad_id] * (pad_char_len - len(ids)))[
                 :pad_char_len] for ids in id_list])
         batch_data['passage_char_ids'] = passage_char_ids_list
+
+        batch_data['passage_py_ids'] = [(id_list + [[pad_id]] * (self.max_p_len - len(id_list)))[
+            :self.max_p_len] for id_list in batch_data['passage_py_ids']]
+        passage_py_ids_list = []
+        for id_list in batch_data['passage_py_ids']:
+            passage_py_ids_list.append([(ids + [pad_id] * (pad_py_len - len(ids)))[
+                :pad_py_len] for ids in id_list])
+        batch_data['passage_py_ids'] = passage_py_ids_list
 
         # print(np.asanyarray(passage_char_ids_list).shape)
 
@@ -190,6 +211,35 @@ class CMRCDataset(object):
                     for char in token:
                         yield char
 
+    def py_iter(self, set_name=None):
+        """
+        Iterates over all the char in the dataset
+        Args:
+            set_name: if it is set, then the specific set will be used
+        Returns:
+            a generator
+        """
+        if set_name is None:
+            data_set = self.train_set + self.dev_set + self.test_set
+        elif set_name == 'train':
+            data_set = self.train_set
+        elif set_name == 'dev':
+            data_set = self.dev_set
+        elif set_name == 'test':
+            data_set = self.test_set
+        else:
+            raise NotImplementedError(
+                'No data set named as {}'.format(set_name))
+        if data_set is not None:
+            for sample in data_set:
+                # print(sample)
+                for token in sample['context_text_pys']:
+                    for py in token:
+                        yield py
+                for token in sample['query_text_pys']:
+                    for py in token:
+                        yield py
+
     def convert_to_ids(self, vocab):
         """
         Convert the question and passage in the original dataset to ids
@@ -204,6 +254,7 @@ class CMRCDataset(object):
                     sample['context_text_tokens'])
                 sample['question_token_ids'] = vocab.convert_word_to_ids(
                     sample['query_text_tokens'])
+
                 sample['passage_char_ids'] = []
                 sample['question_char_ids'] = []
                 for chars in sample['context_text_chars']:
@@ -212,6 +263,15 @@ class CMRCDataset(object):
                 for chars in sample['query_text_chars']:
                     sample['question_char_ids'].append(
                         vocab.convert_char_to_ids(chars))
+
+                sample['passage_py_ids'] = []
+                sample['question_py_ids'] = []
+                for pys in sample['context_text_pys']:
+                    sample['passage_py_ids'].append(
+                        vocab.convert_py_to_ids(pys))
+                for pys in sample['query_text_pys']:
+                    sample['question_py_ids'].append(
+                        vocab.convert_py_to_ids(pys))
 
     def gen_mini_batches(self, set_name, batch_size, pad_id, shuffle=True):
         """

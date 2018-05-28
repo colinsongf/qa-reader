@@ -9,6 +9,9 @@
 import jieba
 import json
 import re
+from xpinyin import Pinyin
+
+pytf = Pinyin()
 
 with open('../data/extra.dict', 'r') as fin:
     for word in fin:
@@ -55,6 +58,8 @@ def segment(sample):
     for l in context_text_tokens_list:
         context_text_tokens.extend(l)
     context_text_chars = [list(token) for token in context_text_tokens]
+    context_text_pys = [list(pytf.get_pinyin(token, ''))
+                        for token in context_text_tokens]
     title_tokens = list(jieba.cut(sample['title']))
     segmented_qas = []
     for qa in sample['qas']:
@@ -68,6 +73,8 @@ def segment(sample):
 
         query_text_tokens = list(jieba.cut(qa['query_text']))
         query_text_chars = [list(token) for token in query_text_tokens]
+        query_text_pys = [list(pytf.get_pinyin(token, ''))
+                          for token in query_text_tokens]
         answer_tokens = list(jieba.cut(str(qa['answers'][0])))
         ssample['query_text_tokens'] = query_text_tokens
         ssample['answer_tokens'] = answer_tokens
@@ -75,6 +82,8 @@ def segment(sample):
         ssample['title_tokens'] = title_tokens
         ssample['context_text_chars'] = context_text_chars
         ssample['query_text_chars'] = query_text_chars
+        ssample['context_text_pys'] = context_text_pys
+        ssample['query_text_pys'] = query_text_pys
         result.append(ssample)
     return result
 
@@ -191,7 +200,7 @@ def find_answer_span(sample):
         answer_span.append(end)
     elif len(start_pos) == 1:
         start = start_pos[0]
-        end = start + len(answer_tokens)
+        end = start + len(answer_tokens) - 1
         answer_span.append(start)
         answer_span.append(end)
     else:
@@ -207,7 +216,7 @@ def find_answer_span(sample):
             if len(index) > max_match:
                 best_start = start
         start = best_start
-        end = start + len(answer_tokens)
+        end = start + len(answer_tokens) - 1
         answer_span.append(start)
         answer_span.append(end)
 
