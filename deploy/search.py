@@ -11,11 +11,11 @@ class Search(object):
     def __init__(self):
         pass
 
-    def web_search(self):
-        pass
+    def baidu_search(self, question):
+        return [{'passage': '这是一个示例', 'source': 'baidu'}]
 
-    def solr_search(self):
-        pass
+    def solr_search(self, question):
+        return [{'passage': '这还是一个示例哇哈哈', 'source': 'solr'}]
 
     def search(self, question):
         pass

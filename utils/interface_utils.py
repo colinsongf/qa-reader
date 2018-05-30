@@ -9,6 +9,20 @@
 import jieba
 
 
+def get_feed_dict(model, batch, dropout=0.1):
+    feed_dict = {model.p: batch['passage_token_ids'],
+                 model.q: batch['question_token_ids'],
+                 model.p_len: batch['passage_length'],
+                 model.q_len: batch['question_length'],
+                 #  model.ph: batch['passage_char_ids'],
+                 #  model.qh: batch['question_char_ids'],
+                 model.ppy: batch['passage_py_ids'],
+                 model.qpy: batch['question_py_ids'],
+                 model.start_label: batch['start_id'],
+                 model.end_label: batch['end_id'],
+                 model.dropout: dropout}
+
+
 def find_best_answer(start_prob, end_prob, max_a_len):
 
     passage_len = len(start_prob)
@@ -26,15 +40,17 @@ def find_best_answer(start_prob, end_prob, max_a_len):
     return best_start, best_end, max_prob
 
 
-def get_feature(inputs, vocab, config):
+def get_feature(model, inputs, vocab, config):
     max_p_len = config.max_p_len
     max_q_len = config.max_q_len
-    pad_char_len = config.pad_char_len
+    pad_char_len = config.max_char_len
     pad_token_id = vocab.get_word_id(vocab.pad_token)
     pad_char_id = vocab.get_char_id(vocab.pad_char)
 
     passage_tokens = list(jieba.cut(inputs[0]))
     question_tokens = list(jieba.cut(inputs[1]))
+    p_len = len(passage_tokens)
+    q_len = len(question_tokens)
     passage_token_ids = vocab.convert_word_to_ids(
         passage_tokens)
     passage_token_ids = passage_token_ids + \
@@ -62,5 +78,14 @@ def get_feature(inputs, vocab, config):
     question_char_ids = [(ids + [pad_char_id] * (pad_char_len - len(ids)))[
         : pad_char_len] for ids in question_char_ids]
 
-    return passage_tokens, passage_token_ids, question_token_ids, len(passage_tokens), \
-        len(question_tokens), passage_char_ids, question_char_ids
+    feed_dict = {model.p: [passage_token_ids],
+                 model.q: [question_token_ids],
+                 model.p_len: [p_len],
+                 model.q_len: [q_len],
+                 model.ph: [passage_char_ids],
+                 model.qh: [question_char_ids],
+                 model.start_label: [0],
+                 model.end_label: [0],
+                 model.dropout: config.dropout}
+
+    return feed_dict

@@ -6,17 +6,11 @@
 	* @desc [description]
 """
 
-from .vocab import Vocab
 from .rc_model.dubidaf import DuBidaf
 from .rc_model.qanet import QANet
-from .rc_model.dubidaf import Mlstm
-from .rc_model.qanet import Rnet
 
 
 __all__ = [
-    'Vocab',
     'DuBidaf',
     'QANet',
-    'Mlstm',
-    'Rnet'
 ]

@@ -33,6 +33,15 @@ from .vec_helper import BenebotVector
 from .parameter import Config
 from .interface_utils import find_best_answer
 from .interface_utils import get_feature
+from .network import rnn
+from .network import MatchLSTMLayer
+from .network import AttentionFlowMatchLayer
+from .network import PointerNetDecoder
+from .network import highway, conv, initializer, residual_block, regularizer
+from .network import mask_logits, trilinear, total_params, optimized_trilinear_for_attention
+from .vocab import Vocab
+from .brc_dataset import BRCDataset
+from .cmrc_dataset import CMRCDataset
 
 __all__ = [
     'compute_bleu_rouge',
@@ -44,5 +53,21 @@ __all__ = [
     'BenebotVector',
     'Config',
     'find_best_answer',
-    'get_feature'
+    'get_feature',
+    'rnn',
+    'MatchLSTMLayer',
+    'AttentionFlowMatchLayer',
+    'PointerNetDecoder',
+    'highway',
+    'conv',
+    'initializer',
+    'residual_block',
+    'mask_logits',
+    'trilinear',
+    'total_params',
+    'optimized_trilinear_for_attention',
+    'regularizer',
+    'Vocab',
+    'BRCDataset',
+    'CMRCDataset'
 ]

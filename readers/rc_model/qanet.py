@@ -13,8 +13,8 @@ https://github.com/NLPLearn/QANet
 import logging
 import time
 import tensorflow as tf
-from rc_model.layers.layers import initializer, regularizer, residual_block, highway, conv
-from rc_model.layers.layers import mask_logits, trilinear, total_params, optimized_trilinear_for_attention
+from utils import initializer, regularizer, residual_block, highway, conv
+from utils import mask_logits, trilinear, total_params, optimized_trilinear_for_attention
 
 
 class QANet(object):

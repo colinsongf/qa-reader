@@ -17,15 +17,14 @@ import json
 import argparse
 import logging
 import tensorflow as tf
-from brc_dataset import BRCDataset
-from cmrc_dataset import CMRCDataset
-from vocab import Vocab
+from utils import BRCDataset
+from utils import CMRCDataset
 from rc_model.dubidaf import DuBidaf
 from rc_model.mlstm import Mlstm
 from rc_model.qanet import QANet
 from rc_model.rnet import Rnet
 from rc_model.baseline import BaseModel
-from utils import Config
+from utils import Config, Vocab
 from demo import Demo
 from trainer import Trainer, MultiGPUTrainer
 from evaluator import Evaluator

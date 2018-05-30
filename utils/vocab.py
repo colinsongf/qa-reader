@@ -19,7 +19,7 @@ This module implements the Vocab class for converting string to id and back
 """
 
 import numpy as np
-from utils import BenebotVector
+from .vec_helper import BenebotVector
 
 
 class Vocab(object):
@@ -377,3 +377,11 @@ class Vocab(object):
             if stop_id is not None and i == stop_id:
                 break
         return pys
+
+
+def main():
+    vocab = Vocab()
+
+
+if __name__ == '__main__':
+    main()
