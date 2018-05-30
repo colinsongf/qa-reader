@@ -42,6 +42,7 @@ from .network import mask_logits, trilinear, total_params, optimized_trilinear_f
 from .vocab import Vocab
 from .brc_dataset import BRCDataset
 from .cmrc_dataset import CMRCDataset
+from .search_utils import SolrSearch, BaiduSearch
 
 __all__ = [
     'compute_bleu_rouge',
@@ -69,5 +70,7 @@ __all__ = [
     'regularizer',
     'Vocab',
     'BRCDataset',
-    'CMRCDataset'
+    'CMRCDataset',
+    'SolrSearch',
+    'BaiduSearch'
 ]

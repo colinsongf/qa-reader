@@ -46,7 +46,7 @@ def hello():
     if not question:
         return jsonify(result)
     result['question'] = question
-    response = server.inference(question=question, source='both')
+    response = server.inference(question=question, source='solr')
     result.update(response)
     print(result)
     return jsonify(result)

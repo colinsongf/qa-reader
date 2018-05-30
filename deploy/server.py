@@ -40,7 +40,8 @@ class Server(object):
     def __init__(self, args, config):
         self.algo = args.algo
         self.config = config
-        self.search_engine = Search()
+        self.search_engine = Search(
+            config.solr_core, config.solr_url, config.baidu_url, config.limit)
         self.vocab = Vocab()
         self._init_model()
         self._init_sess()

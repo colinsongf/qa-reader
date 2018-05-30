@@ -5,17 +5,26 @@
 	* @modify date 2018-05-24 10:31:32
 	* @desc [implements the search interface]
 """
+from utils import SolrSearch
+from utils import BaiduSearch
 
 
 class Search(object):
-    def __init__(self):
-        pass
+    def __init__(self, solr_core, solr_url, baidu_url, limit):
+        self.solr = SolrSearch(solr_core, solr_url, limit)
+        self.baidu = BaiduSearch(baidu_url, limit)
 
     def baidu_search(self, question):
-        return [{'passage': '这是一个示例', 'source': 'baidu'}]
+        passages = self.baidu.query(question)
+        result = [{'passage': passage, 'source': 'solr'}
+                  for passage in passages]
+        return result
 
     def solr_search(self, question):
-        return [{'passage': '这还是一个示例哇哈哈', 'source': 'solr'}]
+        passages = self.solr.query(question)
+        result = [{'passage': passage, 'source': 'solr'}
+                  for passage in passages]
+        return result
 
     def search(self, question):
         pass
