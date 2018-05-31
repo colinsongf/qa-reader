@@ -16,7 +16,7 @@ class Search(object):
 
     def baidu_search(self, question):
         passages = self.baidu.query(question)
-        result = [{'passage': passage, 'source': 'solr'}
+        result = [{'passage': passage, 'source': 'baidu'}
                   for passage in passages]
         return result
 

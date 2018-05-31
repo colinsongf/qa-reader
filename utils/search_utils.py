@@ -44,6 +44,7 @@ class BaiduSearch(object):
         soup = BeautifulSoup(response.content, 'lxml')
         tis = soup.find_all(class_='ti')
         hrefs = [ti.attrs['href'] for ti in list(tis)][:self.limit]
+        # print(hrefs)
         return hrefs
 
     def get_passage(self, hrefs):
@@ -51,8 +52,12 @@ class BaiduSearch(object):
         for href in hrefs:
             response = requests.get(href)
             soup = BeautifulSoup(response.content, 'lxml')
-            passage = soup.find(class_='best-text mb-10').text
-            passages.append(passage)
+            best_text = soup.find(class_='best-text mb-10')
+            if best_text:
+                passage = best_text.text
+                passages.append(passage)
+            else:
+                continue
         return passages
 
 

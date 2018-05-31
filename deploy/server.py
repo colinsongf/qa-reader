@@ -81,6 +81,7 @@ class Server(object):
         if not source:
             source = 'solr'
         documents = self.search(question, source)
+        # print(documents)
         assert len(documents) != 0, 'Can not search any passages.'
 
         response = []

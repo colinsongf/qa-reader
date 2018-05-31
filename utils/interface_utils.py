@@ -49,32 +49,36 @@ def get_feature(model, inputs, vocab, config):
 
     passage_tokens = list(jieba.cut(inputs[0]))
     question_tokens = list(jieba.cut(inputs[1]))
-    p_len = len(passage_tokens)
-    q_len = len(question_tokens)
+    # print('*****************')
+    # print(len(passage_tokens))
+    # print(max_p_len)
+    p_len = min(len(passage_tokens), max_p_len)
+    q_len = min(len(question_tokens), max_q_len)
     passage_token_ids = vocab.convert_word_to_ids(
         passage_tokens)
-    passage_token_ids = passage_token_ids + \
-        ([pad_token_id] * (max_p_len - len(passage_token_ids)
-                           ))[: max_p_len]
+    passage_token_ids = (passage_token_ids +
+                         ([pad_token_id] * (max_p_len - len(passage_token_ids)
+                                            )))[: max_p_len]
+    # print(len(passage_token_ids))
     question_token_ids = vocab.convert_word_to_ids(
         question_tokens)
-    question_token_ids = question_token_ids + \
-        ([pad_token_id] * (max_q_len - len(question_token_ids)
-                           ))[: max_q_len]
+    question_token_ids = (question_token_ids +
+                          ([pad_token_id] * (max_q_len - len(question_token_ids)
+                                             )))[: max_q_len]
 
     passage_char_ids = [vocab.convert_char_to_ids(
         list(word)) for word in passage_tokens]
-    passage_char_ids = passage_char_ids + \
-        ([[pad_char_id]] * (max_p_len - len(passage_char_ids)
-                            ))[: max_p_len]
+    passage_char_ids = (passage_char_ids +
+                        ([[pad_char_id]] * (max_p_len - len(passage_char_ids)
+                                            )))[: max_p_len]
     passage_char_ids = [(ids + [pad_char_id] * (pad_char_len - len(ids)))[
         : pad_char_len] for ids in passage_char_ids]
 
     question_char_ids = [vocab.convert_char_to_ids(
         list(word)) for word in question_tokens]
-    question_char_ids = question_char_ids + \
-        ([[pad_char_id]] * (max_q_len - len(question_char_ids)
-                            ))[: max_q_len]
+    question_char_ids = (question_char_ids +
+                         ([[pad_char_id]] * (max_q_len - len(question_char_ids)
+                                             )))[: max_q_len]
     question_char_ids = [(ids + [pad_char_id] * (pad_char_len - len(ids)))[
         : pad_char_len] for ids in question_char_ids]
 
