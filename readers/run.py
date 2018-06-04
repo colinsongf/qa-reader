@@ -36,7 +36,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(
         'Reading Comprehension')
-    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET', 'BASE'], default='BIDAF',
+    parser.add_argument('--algo', choices=['BIDAF', 'MLSTM', 'QANET', 'RNET', 'BASE'], default='RNET',
                         help='choose the algorithm to use')
     parser.add_argument('--app_prof', choices=['dureader_debug', 'cmrc2018_debug', 'dureader', 'cmrc2018'],
                         default='cmrc2018_debug',

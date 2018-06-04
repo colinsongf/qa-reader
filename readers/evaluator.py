@@ -79,13 +79,16 @@ class Evaluator(object):
 
             total_loss += loss * len(batch['raw_data'])
             total_num += len(batch['raw_data'])
-            # print('start_poses:', start_probs.shape)
-            # print('end_poses:', end_probs.shape)
+            # print('start_probs:', start_probs)
+            # print('end_poses:', end_probs)
             # print('loss:', loss.shape)
 
             for sample, start_prob, end_prob in zip(batch['raw_data'], start_probs, end_probs):
-                best_answer, max_prob = self.find_best_answer(
-                    sample, start_prob, end_prob)
+                # best_answer, max_prob = self.find_best_answer(
+                #     sample, start_prob, end_prob)
+                # print('1:', start_prob)
+                # print('2:', end_prob)
+                best_answer, max_prob = sample['context_text_tokens'][start_prob:end_prob + 1], 0
             # for sample, start_pos, end_pos in zip(batch['raw_data'], start_poses, end_poses):
             #     best_answer = ''.join(
             #         sample['context_text_tokens'][best_start:best_end + 1])

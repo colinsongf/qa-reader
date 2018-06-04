@@ -39,6 +39,7 @@ from .network import AttentionFlowMatchLayer
 from .network import PointerNetDecoder
 from .network import highway, conv, initializer, residual_block, regularizer
 from .network import mask_logits, trilinear, total_params, optimized_trilinear_for_attention
+from .network import cudnn_gru, native_gru, dot_attention, summ, dropout, ptr_net
 from .vocab import Vocab
 from .brc_dataset import BRCDataset
 from .cmrc_dataset import CMRCDataset
@@ -72,5 +73,11 @@ __all__ = [
     'BRCDataset',
     'CMRCDataset',
     'SolrSearch',
-    'BaiduSearch'
+    'BaiduSearch',
+    'cudnn_gru',
+    'native_gru',
+    'dot_attention',
+    'summ',
+    'dropout',
+    'ptr_net'
 ]

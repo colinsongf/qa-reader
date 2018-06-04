@@ -30,7 +30,11 @@ class Trainer(object):
         self.grads = self.opt.compute_gradients(self.loss)
         self.train_op = self.opt.apply_gradients(
             self.grads, global_step=self.global_step)
-        self.summary_op = model.summary_op
+        self.summary_op = None
+        self.start_logits = model.start_logits
+        self.end_logits = model.end_logits
+        self.start_probs = model.start_logits
+        self.end_probs = model.end_logits
         self.logger = logging.getLogger('qarc')
         sess_config = tf.ConfigProto()
         sess_config.gpu_options.allow_growth = True
@@ -48,7 +52,7 @@ class Trainer(object):
     def get_train_op(self):
         return self.train_op
 
-    def step(self, batch, get_summary=True):
+    def step(self, batch, get_summary=False):
         feed_dict = get_feed_dict(
             self.model, batch)
         # print(feed_dict)
@@ -58,9 +62,13 @@ class Trainer(object):
                               feed_dict=feed_dict)
             # print(start_loss.shape)
         else:
-            loss, train_op = self.sess.run(
-                [self.loss, self.train_op], feed_dict=feed_dict)
+            loss, train_op, start_logits, end_logits, start_probs, end_probs = self.sess.run(
+                [self.loss, self.train_op, self.start_logits, self.end_logits, self.start_probs, self.end_probs], feed_dict=feed_dict)
             summary = None
+            # print('1:', start_logits.shape)
+            # print('2:', start_probs.shape)
+            # print('3:', start_probs.shape)
+            # print('4:', start_probs.shape)
         return loss, summary, train_op
 
     def _train_epoch(self, train_batches):
@@ -74,8 +82,9 @@ class Trainer(object):
         log_every_n_batch, n_batch_loss = 50, 0
         for bitx, batch in enumerate(train_batches, 1):
             loss, summary, train_op = self.step(batch)
-            self.train_writer.add_summary(summary, self.local_global_step)
-            self.local_global_step += 1
+            if summary:
+                self.train_writer.add_summary(summary, self.local_global_step)
+                self.local_global_step += 1
             total_loss += loss * len(batch['raw_data'])
             total_num += len(batch['raw_data'])
             n_batch_loss += loss
